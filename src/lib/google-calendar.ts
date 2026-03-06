@@ -9,11 +9,12 @@ export async function createGoogleMeeting(params: {
     endTime: string
     attendees: string[] // List of emails
     calendarId?: string // The Mentor's email
+    fallbackLink?: string // Jitsi link to include in description
 }) {
     let clientEmail = process.env.GOOGLE_CLIENT_EMAIL
     let privateKey = process.env.GOOGLE_PRIVATE_KEY
 
-    // Helper to clean env vars that might be quoted or have literal \n
+    // Helper to clean env vars
     const cleanVar = (v: string | undefined) => {
         if (!v) return v
         let cleaned = v.trim()
@@ -40,9 +41,15 @@ export async function createGoogleMeeting(params: {
 
         const calendar = google.calendar({ version: 'v3', auth })
 
+        // Detailed description including the fallback link
+        const finalDescription = params.fallbackLink
+            ? `${params.description}\n\nJoin Meeting: ${params.fallbackLink}`
+            : params.description
+
         const baseEvent = {
             summary: params.title,
-            description: params.description,
+            description: finalDescription,
+            location: params.fallbackLink || undefined,
             start: { dateTime: params.startTime },
             end: { dateTime: params.endTime },
             attendees: params.attendees.map(email => ({ email })),
@@ -50,7 +57,7 @@ export async function createGoogleMeeting(params: {
 
         const targetCalendarId = params.calendarId || 'primary'
 
-        // Solution keys to try in order of preference
+        // Strategy 1 & 2: Try with Conference Data (Google Meet)
         const solutionKeys = [{ type: 'hangoutsMeet' }, { type: 'video' }]
 
         for (const solutionKey of solutionKeys) {
@@ -75,11 +82,11 @@ export async function createGoogleMeeting(params: {
                 console.log('--- Google API: Success ---')
                 return {
                     eventId: response.data.id,
-                    meetLink: meetLink || response.data.htmlLink,
+                    meetLink: meetLink || null, // ONLY return meetLink if it's a real conference link
+                    calendarLink: response.data.htmlLink
                 }
             } catch (err: any) {
                 console.warn(`--- Google API: Attempt with ${solutionKey.type} Failed: ${err.message} ---`)
-                // If it's the last attempt or not a conference error, we'll let it handle in the outer catch or loop
             }
         }
 
@@ -90,7 +97,7 @@ export async function createGoogleMeeting(params: {
                 calendarId: 'primary',
                 requestBody: {
                     ...baseEvent,
-                    attendees: [], // Clear attendees to bypass DWD restriction
+                    attendees: [],
                     conferenceData: {
                         createRequest: {
                             requestId: `mentorly-${Date.now()}-noattendees`,
@@ -104,14 +111,14 @@ export async function createGoogleMeeting(params: {
             console.log('--- Google API: Success (No Attendees fallback) ---')
             return {
                 eventId: response.data.id,
-                meetLink: meetLink || response.data.htmlLink,
+                meetLink: meetLink || null,
+                calendarLink: response.data.htmlLink
             }
         } catch (err) {
-            const error = err as Error
-            console.warn(`--- Google API: Attempt 3 Failed: ${error.message} ---`)
+            console.warn(`--- Google API: Attempt 3 Failed ---`)
         }
 
-        // Strategy 4: Absolute fallback - Service Account Primary WITHOUT Meet and WITHOUT attendees
+        // Strategy 4: Absolute fallback - Just a basic calendar event
         console.log('--- Google API: Attempt 4 - Absolute Minimal ---')
         const response = await calendar.events.insert({
             calendarId: 'primary',
@@ -121,15 +128,13 @@ export async function createGoogleMeeting(params: {
         console.log('--- Google API: Success (Absolute Minimal) ---')
         return {
             eventId: response.data.id,
-            meetLink: response.data.htmlLink,
+            meetLink: null,
+            calendarLink: response.data.htmlLink
         }
 
     } catch (error: any) {
         console.error('--- Google API: CRITICAL FAILURE ---')
-        let errorMessage = 'Unknown error'
-        if (error instanceof Error) {
-            errorMessage = error.message
-        }
+        let errorMessage = error.message || 'Unknown error'
         if (error.response?.data?.error?.message) {
             errorMessage = error.response.data.error.message
         }

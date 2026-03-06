@@ -11,7 +11,10 @@ import {
     AlertCircle,
     Loader2,
     Mail,
+    ShieldCheck,
+    UserPlus,
 } from 'lucide-react'
+import { grantAdminRole } from './actions'
 import Link from 'next/link'
 
 type Metrics = {
@@ -51,6 +54,10 @@ export default function AdminDashboard() {
     const [recentMentors, setRecentMentors] = useState<RecentMentor[]>([])
     const [recentSessions, setRecentSessions] = useState<RecentSession[]>([])
     const [loading, setLoading] = useState(true)
+
+    const [adminEmail, setAdminEmail] = useState('')
+    const [adminActionLoading, setAdminActionLoading] = useState(false)
+    const [adminMessage, setAdminMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
     useEffect(() => {
         if (!authLoading) {
@@ -154,6 +161,27 @@ export default function AdminDashboard() {
             console.error('Error fetching metrics:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleGrantAdmin = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!adminEmail.trim()) return
+
+        setAdminActionLoading(true)
+        setAdminMessage(null)
+        try {
+            const result = await grantAdminRole(adminEmail.trim().toLowerCase())
+            if (result.success) {
+                setAdminMessage({ type: 'success', text: result.message || 'Admin role granted!' })
+                setAdminEmail('')
+            } else {
+                setAdminMessage({ type: 'error', text: result.error || 'Failed to grant admin role' })
+            }
+        } catch (error: any) {
+            setAdminMessage({ type: 'error', text: error.message || 'An error occurred' })
+        } finally {
+            setAdminActionLoading(false)
         }
     }
 
@@ -387,6 +415,56 @@ export default function AdminDashboard() {
                         </table>
                     </div>
                 )}
+            </div>
+            {/* Management Section */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mt-8 overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Admin Management</h2>
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Promote other users to help manage the platform</p>
+                </div>
+                <div className="p-6">
+                    <form onSubmit={handleGrantAdmin} className="flex flex-col sm:flex-row gap-4 max-w-2xl">
+                        <div className="relative flex-1">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <input
+                                type="email"
+                                required
+                                placeholder="Enter user email address"
+                                value={adminEmail}
+                                onChange={(e) => setAdminEmail(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={adminActionLoading}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 text-sm whitespace-nowrap"
+                        >
+                            {adminActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                            Grant Admin Access
+                        </button>
+                    </form>
+
+                    {adminMessage && (
+                        <div className={`mt-4 p-4 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300 ${adminMessage.type === 'success'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
+                            : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'
+                            }`}>
+                            {adminMessage.type === 'success' ? <UserCheck className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                            {adminMessage.text}
+                        </div>
+                    )}
+
+                    <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Important Note</h4>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Promoting a user to Admin gives them full access to all data, including the ability to approve mentors, manage bookings, and authorize students. **Ensure you trust the user before granting this access.** The user must have already signed up for an account.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     )

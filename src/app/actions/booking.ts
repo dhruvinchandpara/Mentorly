@@ -56,30 +56,40 @@ export async function processBooking(input: BookingInput) {
             }
         }
 
-        // 3. Generate a Meeting Link
-        let meetingLink = `https://meet.jit.si/Mentorly-${newBooking.id.substring(0, 8)}-${Date.now().toString().slice(-4)}`
+        // 3. Generate a Meeting Link (Jitsi is our reliable fallback)
+        // Config params: disable lobby so no moderator is needed, anyone with the link can join
+        const jitsiRoomName = `Mentorly-${newBooking.id.substring(0, 8)}-${Date.now().toString().slice(-4)}`
+        const jitsiConfig = [
+            'config.prejoinConfig.enabled=false',
+            'config.lobbyModeEnabled=false',
+            'config.startWithAudioMuted=true',
+            'config.startWithVideoMuted=false',
+        ].join('&')
+        const jitsiLink = `https://meet.jit.si/${jitsiRoomName}#${jitsiConfig}`
+        let meetingLink = jitsiLink
         let googleEventId = null
 
         try {
             console.log('--- Attempting Google Calendar Integration ---')
             const calResult = await createGoogleMeeting({
                 title: `Mentorship: ${student.full_name} with ${mentor.full_name}`,
-                description: `Mentorly session booked on ${new Date(input.startTime).toLocaleDateString()}. Join via: `,
+                description: `Mentorly session booked on ${new Date(input.startTime).toLocaleDateString()}.`,
                 startTime: input.startTime,
                 endTime: input.endTime,
                 attendees: [mentor.email || '', student.email || ''].filter(Boolean),
-                calendarId: mentor.email || undefined
+                calendarId: mentor.email || undefined,
+                fallbackLink: jitsiLink // This will be in the description
             })
 
+            // Only use Google Meet if it's explicitly generated
             if (calResult.meetLink) {
                 meetingLink = calResult.meetLink
             }
             googleEventId = calResult.eventId
             console.log('--- Google Integration Successful ---')
-        } catch (calErr) {
-            const err = calErr as Error
-            console.warn('--- Google Integration Failed, falling back to Jitsi ---', err.message)
-            // We already have meetingLink set to Jitsi
+        } catch (calErr: any) {
+            console.warn('--- Google Integration Failed, using Jitsi ---', calErr.message)
+            // meetingLink is already set to jitsiLink
         }
 
         // 4. Update booking with the Meeting Link and Google Event ID

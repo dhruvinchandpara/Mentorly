@@ -21,6 +21,9 @@ export default function DashboardPage() {
                 } else {
                     router.push('/dashboard/student')
                 }
+            } else {
+                // User is logged in but no profile found, maybe redirect to setup?
+                router.push('/explore')
             }
         }
     }, [user, profile, loading, router])

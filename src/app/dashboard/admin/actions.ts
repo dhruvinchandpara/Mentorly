@@ -206,3 +206,51 @@ export async function removeAuthorizedStudent(email: string) {
         }
     }
 }
+
+export async function grantAdminRole(email: string) {
+    try {
+        const supabase = createAdminClient()
+
+        // 1. Find the profile by email
+        const { data: profile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .eq('email', email)
+            .single()
+
+        if (fetchError || !profile) {
+            return {
+                success: false,
+                error: `User with email ${email} not found. Ensure they have signed up first.`,
+            }
+        }
+
+        // 2. Update the role to 'admin'
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', profile.id)
+
+        if (updateError) {
+            return { success: false, error: updateError.message }
+        }
+
+        // 3. Update auth metadata as well
+        const { error: authError } = await supabase.auth.admin.updateUserById(
+            profile.id,
+            { user_metadata: { role: 'admin' } }
+        )
+
+        if (authError) {
+            console.warn('Auth metadata update failed:', authError.message)
+        }
+
+        return { success: true, message: `Successfully promoted ${profile.full_name || email} to Admin.` }
+    } catch (error) {
+        console.error('Grant admin role error:', error)
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'An unexpected error occurred',
+        }
+    }
+}
