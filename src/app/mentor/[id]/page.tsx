@@ -161,7 +161,7 @@ export default function MentorBookingPage() {
 
             // Convert bookings to 15-minute slot strings (HH:MM format)
             const slots: string[] = []
-            bookings.forEach(booking => {
+            bookings.forEach((booking: { start_time: string; duration_minutes?: number }) => {
                 const start = new Date(booking.start_time)
                 const durationMinutes = booking.duration_minutes || 15
 
