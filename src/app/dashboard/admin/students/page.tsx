@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { addAuthorizedStudent, removeAuthorizedStudent } from '../actions'
+import { addAuthorizedStudent, removeAuthorizedStudent, bulkAddAuthorizedStudents } from '../actions'
 import {
     Users,
     Plus,
@@ -12,7 +12,10 @@ import {
     Loader2,
     AlertCircle,
     CheckCircle,
-    ArrowLeft
+    ArrowLeft,
+    Upload,
+    FileText,
+    X
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -29,6 +32,9 @@ export default function AuthorizedStudentsPage() {
     const [newEmail, setNewEmail] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+    const [showBulkImport, setShowBulkImport] = useState(false)
+    const [bulkEmails, setBulkEmails] = useState('')
+    const [bulkImportLoading, setBulkImportLoading] = useState(false)
 
     useEffect(() => {
         fetchStudents()
@@ -93,6 +99,58 @@ export default function AuthorizedStudentsPage() {
         }
     }
 
+    const handleBulkImport = async () => {
+        if (!bulkEmails.trim()) {
+            setMessage({ type: 'error', text: 'Please enter at least one email address' })
+            return
+        }
+
+        setBulkImportLoading(true)
+        setMessage(null)
+
+        try {
+            // Parse emails from text (supports CSV, newline, comma, or semicolon separated)
+            const emailList = bulkEmails
+                .split(/[\n,;]+/)
+                .map(line => {
+                    // Handle CSV format: extract email from quotes or commas
+                    const match = line.match(/([^\s,;"]+@[^\s,;"]+\.[^\s,;"]+)/)
+                    return match ? match[1] : line.trim()
+                })
+                .filter(email => email.length > 0)
+
+            const result = await bulkAddAuthorizedStudents(emailList)
+
+            if (result.success) {
+                setMessage({
+                    type: 'success',
+                    text: result.message || `Successfully added ${result.added} student(s)!`
+                })
+                setBulkEmails('')
+                setShowBulkImport(false)
+                fetchStudents()
+            } else {
+                setMessage({ type: 'error', text: result.error || 'Failed to import students' })
+            }
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message })
+        } finally {
+            setBulkImportLoading(false)
+        }
+    }
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            const text = event.target?.result as string
+            setBulkEmails(text)
+        }
+        reader.readAsText(file)
+    }
+
     const filteredStudents = students.filter(s =>
         s.email.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -138,7 +196,15 @@ export default function AuthorizedStudentsPage() {
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 disabled:opacity-70"
                     >
                         {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                        Add Authorized Student
+                        Add Student
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShowBulkImport(true)}
+                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-slate-700 dark:text-slate-200 font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                    >
+                        <Upload className="w-5 h-5" />
+                        Bulk Import
                     </button>
                 </form>
 
@@ -212,6 +278,125 @@ export default function AuthorizedStudentsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Bulk Import Modal */}
+            {showBulkImport && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+                    <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white dark:bg-slate-900 px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between z-10 rounded-t-2xl">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                                    <Upload className="w-6 h-6 text-indigo-600" />
+                                    Bulk Import Students
+                                </h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                    Import multiple student email addresses at once
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowBulkImport(false)
+                                    setBulkEmails('')
+                                }}
+                                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-6">
+                            {/* Instructions */}
+                            <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    Supported Formats
+                                </h3>
+                                <ul className="text-xs text-indigo-700 dark:text-indigo-400 space-y-1 list-disc list-inside">
+                                    <li>One email per line</li>
+                                    <li>Comma-separated values (CSV)</li>
+                                    <li>Semicolon-separated values</li>
+                                    <li>Upload a .txt or .csv file</li>
+                                </ul>
+                                <div className="mt-3 text-xs text-indigo-600 dark:text-indigo-400 font-mono bg-white dark:bg-slate-950 p-2 rounded border border-indigo-200 dark:border-indigo-800">
+                                    student1@university.edu<br />
+                                    student2@university.edu<br />
+                                    student3@university.edu
+                                </div>
+                            </div>
+
+                            {/* File Upload */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Upload File (Optional)
+                                </label>
+                                <input
+                                    type="file"
+                                    accept=".txt,.csv"
+                                    onChange={handleFileUpload}
+                                    className="block w-full text-sm text-slate-500 dark:text-slate-400
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-lg file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-indigo-50 file:text-indigo-700
+                                        hover:file:bg-indigo-100
+                                        dark:file:bg-indigo-950/30 dark:file:text-indigo-400
+                                        dark:hover:file:bg-indigo-950/50
+                                        cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Text Area */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Email Addresses
+                                </label>
+                                <textarea
+                                    value={bulkEmails}
+                                    onChange={(e) => setBulkEmails(e.target.value)}
+                                    rows={10}
+                                    placeholder="student1@university.edu&#10;student2@university.edu&#10;student3@university.edu"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-mono resize-none"
+                                />
+                                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                    {bulkEmails.split(/[\n,;]+/).filter(e => e.trim()).length} email(s) detected
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="sticky bottom-0 bg-white dark:bg-slate-900 px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3 rounded-b-2xl">
+                            <button
+                                onClick={() => {
+                                    setShowBulkImport(false)
+                                    setBulkEmails('')
+                                }}
+                                className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleBulkImport}
+                                disabled={bulkImportLoading || !bulkEmails.trim()}
+                                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {bulkImportLoading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Importing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-4 h-4" />
+                                        Import Students
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Star, IndianRupee, ArrowRight, BookOpen, Sparkles, Filter, X } from 'lucide-react'
+import { Search, Star, ArrowRight, BookOpen, Sparkles, Filter, X } from 'lucide-react'
 
 interface MentorCard {
     id: string
@@ -284,11 +284,12 @@ export default function ExplorePage() {
                                             <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                                 {mentor.profiles?.full_name}
                                             </h3>
-                                            <div className="flex items-center gap-1.5 text-sm">
-                                                <IndianRupee className="w-3.5 h-3.5 text-emerald-500" />
-                                                <span className="font-semibold text-emerald-600 dark:text-emerald-400">₹{mentor.hourly_rate}</span>
-                                                <span className="text-slate-400">/hour</span>
-                                            </div>
+                                            {mentor.is_active && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 mt-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                    Available
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 

@@ -29,7 +29,8 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // IMPORTANT: Only check the user session for protected routes to avoid latency on public pages.
+    // IMPORTANT: Always refresh session to prevent expiry issues
+    // But only check auth and redirect for protected routes
     const isPublicRoute =
         request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/auth') ||
@@ -39,17 +40,14 @@ export async function updateSession(request: NextRequest) {
 
     console.log(`--- Middleware: ${request.nextUrl.pathname} (Public: ${isPublicRoute}) ---`)
 
-    if (isPublicRoute) {
-        return supabaseResponse
-    }
-
-    console.log('--- Middleware: Fetching user... ---')
+    // Always call getUser() to refresh the session, even on public routes
     const {
         data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
-        // no user, redirect to login
+    // Only redirect to login if user is not authenticated AND accessing protected route
+    if (!user && !isPublicRoute) {
+        console.log('--- Middleware: No user, redirecting to login ---')
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)

@@ -15,12 +15,13 @@ interface Booking {
     student_id: string
     start_time: string
     end_time: string
+    duration_minutes: number
+    slot_count: number
     status: 'scheduled' | 'completed' | 'cancelled'
     meet_link: string | null
     mentors: {
         profiles: { full_name: string }
         expertise: string[]
-        hourly_rate: number
     }
 }
 
@@ -60,29 +61,18 @@ export default function StudentDashboard() {
     // Tick every 30s so button states update
     const [, setTick] = useState(0)
 
-    useEffect(() => {
-        if (!authLoading && profile) {
-            if (profile.role !== 'student') router.replace('/dashboard')
-            else if (user?.id) fetchBookings()
-        }
-    }, [profile, authLoading, user])
-
-    // Refresh call states every 30 seconds
-    useEffect(() => {
-        const id = setInterval(() => setTick(t => t + 1), 30_000)
-        return () => clearInterval(id)
-    }, [])
-
     const fetchBookings = useCallback(async () => {
+        if (!user?.id) return
+
         setLoading(true)
         try {
             const { data, error } = await supabase
                 .from('bookings')
                 .select(`
-                    id, mentor_id, student_id, start_time, end_time, status, meet_link,
-                    mentors!inner(profiles!inner(full_name), expertise, hourly_rate)
+                    id, mentor_id, student_id, start_time, end_time, duration_minutes, slot_count, status, meet_link,
+                    mentors!inner(profiles!inner(full_name), expertise)
                 `)
-                .eq('student_id', user!.id)
+                .eq('student_id', user.id)
                 .order('start_time', { ascending: true })
 
             if (!error) setBookings(data || [])
@@ -91,7 +81,23 @@ export default function StudentDashboard() {
         } finally {
             setLoading(false)
         }
-    }, [supabase, user])
+    }, [supabase, user?.id])
+
+    useEffect(() => {
+        if (!authLoading && profile) {
+            if (profile.role !== 'student') {
+                router.replace('/dashboard')
+            } else if (user?.id) {
+                fetchBookings()
+            }
+        }
+    }, [profile?.id, profile?.role, authLoading, user?.id, router, fetchBookings])
+
+    // Refresh call states every 30 seconds
+    useEffect(() => {
+        const id = setInterval(() => setTick(t => t + 1), 30_000)
+        return () => clearInterval(id)
+    }, [])
 
     const upcomingBookings = bookings.filter(
         b => b.status === 'scheduled' && new Date(b.end_time) >= new Date()
@@ -235,7 +241,10 @@ export default function StudentDashboard() {
                             Explore Mentors
                         </Link>
                         <button
-                            onClick={() => signOut()}
+                            onClick={async () => {
+                                await signOut()
+                                router.push('/login')
+                            }}
                             className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 hover:border-indigo-400 transition-all"
                         >
                             <LogOut className="w-4 h-4" />
@@ -359,7 +368,7 @@ export default function StudentDashboard() {
                                                         </span>
                                                         <span className="flex items-center gap-1.5">
                                                             <Clock className="w-3.5 h-3.5" />
-                                                            {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+                                                            {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes || 15} min)
                                                         </span>
                                                     </div>
                                                 </div>
@@ -420,7 +429,7 @@ export default function StudentDashboard() {
                                                 <div>
                                                     <h4 className="font-medium text-slate-900 dark:text-white text-sm">{mentorName}</h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        {formatDate(booking.start_time)} • {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+                                                        {formatDate(booking.start_time)} • {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes || 15} min)
                                                     </p>
                                                 </div>
                                             </div>

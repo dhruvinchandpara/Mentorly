@@ -6,14 +6,39 @@ import { createGoogleMeeting } from '@/lib/google-calendar'
 export type BookingInput = {
     mentorId: string
     studentId: string
-    startTime: string // ISO string
-    endTime: string // ISO string
-    durationMinutes: number
+    startTime: string // ISO string in UTC
+    endTime: string // ISO string in UTC
+    durationMinutes: number // Must be multiple of 15 (15, 30, 45, 60, etc.)
+    slotCount?: number // Number of consecutive 15-min slots (defaults to durationMinutes / 15)
+}
+
+// Helper function to ensure times are in UTC/ISO format
+function ensureUTC(dateString: string): string {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date format: ${dateString}`)
+    }
+    return date.toISOString()
 }
 
 export async function processBooking(input: BookingInput) {
     try {
         const supabase = createAdminClient()
+
+        // Validate duration is in 15-minute increments
+        if (input.durationMinutes % 15 !== 0 || input.durationMinutes < 15) {
+            return {
+                success: false,
+                error: 'Booking duration must be in 15-minute increments (15, 30, 45, 60, etc.)',
+            }
+        }
+
+        // Calculate slot count if not provided
+        const slotCount = input.slotCount || Math.floor(input.durationMinutes / 15)
+
+        // Ensure times are in proper UTC format
+        const startTimeUTC = ensureUTC(input.startTime)
+        const endTimeUTC = ensureUTC(input.endTime)
 
         // 1. Fetch Mentor and Student names/emails
         const { data: mentor, error: mentorErr } = await supabase
@@ -35,15 +60,40 @@ export async function processBooking(input: BookingInput) {
             }
         }
 
-        // 2. Initial booking record (without meeting link yet)
+        // 2. Check for duplicate/overlapping bookings (using UTC times)
+        // For slot-based bookings, we need to check if ANY part of the requested time overlaps with existing bookings
+        const { data: existingBookings, error: checkError } = await supabase
+            .from('bookings')
+            .select('id, start_time, end_time, duration_minutes')
+            .eq('mentor_id', input.mentorId)
+            .eq('status', 'scheduled')
+            .gte('end_time', startTimeUTC)
+            .lte('start_time', endTimeUTC)
+
+        if (checkError) {
+            return {
+                success: false,
+                error: 'Failed to check availability.',
+            }
+        }
+
+        if (existingBookings && existingBookings.length > 0) {
+            return {
+                success: false,
+                error: 'This time slot is no longer available. Please select a different time.',
+            }
+        }
+
+        // 3. Initial booking record (without meeting link yet) - store in UTC
         const { data: newBooking, error: bookingErr } = await supabase
             .from('bookings')
             .insert({
                 mentor_id: input.mentorId,
                 student_id: input.studentId,
-                start_time: input.startTime,
-                end_time: input.endTime,
+                start_time: startTimeUTC,
+                end_time: endTimeUTC,
                 duration_minutes: input.durationMinutes,
+                slot_count: slotCount,
                 status: 'scheduled',
             })
             .select('id')
@@ -56,7 +106,7 @@ export async function processBooking(input: BookingInput) {
             }
         }
 
-        // 3. Generate a Meeting Link (Jitsi is our reliable fallback)
+        // 4. Generate a Meeting Link (Jitsi is our reliable fallback)
         // Config params: disable lobby so no moderator is needed, anyone with the link can join
         const jitsiRoomName = `Mentorly-${newBooking.id.substring(0, 8)}-${Date.now().toString().slice(-4)}`
         const jitsiConfig = [
@@ -73,9 +123,9 @@ export async function processBooking(input: BookingInput) {
             console.log('--- Attempting Google Calendar Integration ---')
             const calResult = await createGoogleMeeting({
                 title: `Mentorship: ${student.full_name} with ${mentor.full_name}`,
-                description: `Mentorly session booked on ${new Date(input.startTime).toLocaleDateString()}.`,
-                startTime: input.startTime,
-                endTime: input.endTime,
+                description: `Mentorly session booked on ${new Date(startTimeUTC).toLocaleDateString()}.`,
+                startTime: startTimeUTC, // Pass UTC time to Google Calendar
+                endTime: endTimeUTC,     // Google Calendar will handle timezone conversion
                 attendees: [mentor.email || '', student.email || ''].filter(Boolean),
                 calendarId: mentor.email || undefined,
                 fallbackLink: jitsiLink // This will be in the description
@@ -92,7 +142,7 @@ export async function processBooking(input: BookingInput) {
             // meetingLink is already set to jitsiLink
         }
 
-        // 4. Update booking with the Meeting Link and Google Event ID
+        // 5. Update booking with the Meeting Link and Google Event ID
         const { error: updateErr } = await supabase
             .from('bookings')
             .update({

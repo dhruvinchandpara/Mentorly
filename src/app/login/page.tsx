@@ -67,6 +67,9 @@ export default function LoginPage() {
                         prompt: 'consent',
                     },
                     redirectTo: `${location.origin}/auth/callback?next=/dashboard`,
+                    data: {
+                        role: 'student', // Google OAuth users are always students
+                    },
                 },
             })
             if (error) throw error

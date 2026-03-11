@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
@@ -25,43 +25,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [profile, setProfile] = useState<Profile | null>(null)
     const [loading, setLoading] = useState(true)
-    const supabase = createClient()
 
-    useEffect(() => {
-        const getUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
+    // useMemo to prevent recreating supabase client on every render
+    const supabase = useMemo(() => createClient(), [])
 
-            if (session?.user) {
-                setUser(session.user)
-                await fetchProfile(session.user.id)
-            }
-
-            setLoading(false)
-
-            const { data: { subscription } } = supabase.auth.onAuthStateChange(
-                async (_event, session) => {
-                    if (session?.user) {
-                        setUser(session.user)
-                        if (!profile || profile.id !== session.user.id) {
-                            await fetchProfile(session.user.id)
-                        }
-                    } else {
-                        setUser(null)
-                        setProfile(null)
-                    }
-                    setLoading(false)
-                }
-            )
-
-            return () => {
-                subscription.unsubscribe()
-            }
-        }
-
-        getUser()
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-    const fetchProfile = async (userId: string) => {
+    const fetchProfile = useCallback(async (userId: string) => {
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -77,7 +45,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error('Unexpected error fetching profile:', error)
         }
-    }
+    }, [supabase])
+
+    useEffect(() => {
+        let isMounted = true
+
+        const getUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (isMounted && session?.user) {
+                setUser(session.user)
+                await fetchProfile(session.user.id)
+            }
+
+            if (isMounted) {
+                setLoading(false)
+            }
+
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(
+                async (_event, session) => {
+                    if (!isMounted) return
+
+                    if (session?.user) {
+                        setUser(session.user)
+                        await fetchProfile(session.user.id)
+                    } else {
+                        setUser(null)
+                        setProfile(null)
+                    }
+                    setLoading(false)
+                }
+            )
+
+            return () => {
+                isMounted = false
+                subscription.unsubscribe()
+            }
+        }
+
+        getUser()
+    }, [supabase, fetchProfile])
 
     const signOut = async () => {
         await supabase.auth.signOut()

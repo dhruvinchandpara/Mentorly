@@ -552,7 +552,6 @@ export default function MentorManagement() {
                     expertise,
                     hourly_rate,
                     is_active,
-                    profile_id,
                     profiles: profiles!inner(
                         full_name,
                         email
@@ -584,8 +583,7 @@ export default function MentorManagement() {
                     expertise: string[]
                     hourly_rate: number
                     is_active: boolean
-                    profile_id: string
-                    profiles: { full_name: string; email: string }
+                    profiles: { full_name: string | null; email: string | null }
                 }
 
                 setMentors(
@@ -605,7 +603,10 @@ export default function MentorManagement() {
         } catch (error: unknown) {
             console.error('Error fetching mentors:', error)
             const message = error instanceof Error ? error.message : 'Unknown error'
-            showToast(`Error: ${message}`, 'error')
+            showToast(`Failed to load mentors: ${message}. Please refresh the page.`, 'error')
+
+            // Set empty state to avoid showing stale data
+            setMentors([])
         } finally {
             setLoading(false)
         }
@@ -967,14 +968,26 @@ export default function MentorManagement() {
                                 ? 'Try adjusting your search or filter criteria.'
                                 : 'Click "Add New Mentor" to create your first mentor.'}
                         </p>
-                        {!hasActiveFilters && (
-                            <button
-                                onClick={() => setModalMode('add')}
-                                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30 transition-all"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add New Mentor
-                            </button>
+                        {!hasActiveFilters && !loading && (
+                            <>
+                                <button
+                                    onClick={() => setModalMode('add')}
+                                    className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30 transition-all"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Add New Mentor
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setLoading(true)
+                                        fetchMentors()
+                                    }}
+                                    className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-400 transition-all"
+                                >
+                                    <AlertCircle className="w-4 h-4" />
+                                    Retry Loading
+                                </button>
+                            </>
                         )}
                     </div>
                 ) : (

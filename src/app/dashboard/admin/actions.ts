@@ -207,6 +207,78 @@ export async function removeAuthorizedStudent(email: string) {
     }
 }
 
+export async function bulkAddAuthorizedStudents(emails: string[]) {
+    try {
+        const supabase = createAdminClient()
+
+        // Validate and clean emails
+        const cleanedEmails = emails
+            .map(email => email.toLowerCase().trim())
+            .filter(email => {
+                // Basic email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                return email && emailRegex.test(email)
+            })
+
+        if (cleanedEmails.length === 0) {
+            return {
+                success: false,
+                error: 'No valid email addresses found',
+            }
+        }
+
+        // Remove duplicates
+        const uniqueEmails = Array.from(new Set(cleanedEmails))
+
+        // Check which emails already exist
+        const { data: existingEmails } = await supabase
+            .from('authorized_students')
+            .select('email')
+            .in('email', uniqueEmails)
+
+        const existingSet = new Set(
+            (existingEmails || []).map(record => record.email)
+        )
+
+        // Filter out already existing emails
+        const newEmails = uniqueEmails.filter(email => !existingSet.has(email))
+
+        if (newEmails.length === 0) {
+            return {
+                success: true,
+                added: 0,
+                skipped: uniqueEmails.length,
+                message: 'All emails were already authorized',
+            }
+        }
+
+        // Insert new emails
+        const { error } = await supabase
+            .from('authorized_students')
+            .insert(newEmails.map(email => ({ email })))
+
+        if (error) {
+            return { success: false, error: error.message }
+        }
+
+        return {
+            success: true,
+            added: newEmails.length,
+            skipped: uniqueEmails.length - newEmails.length,
+            message: `Successfully added ${newEmails.length} student(s). ${uniqueEmails.length - newEmails.length > 0 ? `${uniqueEmails.length - newEmails.length} already existed.` : ''}`,
+        }
+    } catch (error) {
+        console.error('Bulk add authorized students error:', error)
+        return {
+            success: false,
+            error:
+                error instanceof Error
+                    ? error.message
+                    : 'An unexpected error occurred',
+        }
+    }
+}
+
 export async function grantAdminRole(email: string) {
     try {
         const supabase = createAdminClient()

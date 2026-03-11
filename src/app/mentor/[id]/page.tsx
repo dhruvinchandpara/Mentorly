@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { processBooking } from '@/app/actions/booking'
 import {
-    ArrowLeft, Calendar, Clock, IndianRupee, Tag, CheckCircle,
+    ArrowLeft, Calendar, Clock, Tag, CheckCircle,
     Sparkles, CalendarDays, ChevronLeft, ChevronRight, Loader2,
     BookOpen, Video, ExternalLink
 } from 'lucide-react'
@@ -38,14 +38,18 @@ function generateTimeSlots(startTime: string, endTime: string): string[] {
     const [startH, startM] = startTime.split(':').map(Number)
     const [endH, endM] = endTime.split(':').map(Number)
 
-    let currentH = startH
-    let currentM = startM
+    // Convert to total minutes for easier calculation
+    let currentMinutes = startH * 60 + startM
+    const endMinutes = endH * 60 + endM
 
-    while (currentH < endH || (currentH === endH && currentM < endM)) {
-        const hourStr = String(currentH).padStart(2, '0')
-        const minStr = String(currentM).padStart(2, '0')
+    // Generate 15-minute slots
+    while (currentMinutes < endMinutes) {
+        const hours = Math.floor(currentMinutes / 60)
+        const minutes = currentMinutes % 60
+        const hourStr = String(hours).padStart(2, '0')
+        const minStr = String(minutes).padStart(2, '0')
         slots.push(`${hourStr}:${minStr}`)
-        currentH += 1
+        currentMinutes += 15 // Increment by 15 minutes
     }
     return slots
 }
@@ -96,10 +100,19 @@ export default function MentorBookingPage() {
     const [weekOffset, setWeekOffset] = useState(0)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [selectedTime, setSelectedTime] = useState<string | null>(null)
+    const [slotCount, setSlotCount] = useState(1) // 1 = 15min, 2 = 30min
+    const [bookedSlots, setBookedSlots] = useState<string[]>([])
 
     useEffect(() => {
         if (mentorId) fetchMentorData()
     }, [mentorId])
+
+    // Fetch booked slots when date is selected
+    useEffect(() => {
+        if (selectedDate && mentorId) {
+            fetchBookedSlotsForDate(selectedDate)
+        }
+    }, [selectedDate, mentorId])
 
     const fetchMentorData = async () => {
         setLoading(true)
@@ -125,6 +138,49 @@ export default function MentorBookingPage() {
         }
     }
 
+    const fetchBookedSlotsForDate = async (date: Date) => {
+        try {
+            // Get start and end of the selected day in local time, then convert to UTC
+            const startOfDay = new Date(date)
+            startOfDay.setHours(0, 0, 0, 0)
+            const endOfDay = new Date(date)
+            endOfDay.setHours(23, 59, 59, 999)
+
+            const { data: bookings } = await supabase
+                .from('bookings')
+                .select('start_time, end_time, duration_minutes')
+                .eq('mentor_id', mentorId)
+                .eq('status', 'scheduled')
+                .gte('start_time', startOfDay.toISOString())
+                .lte('start_time', endOfDay.toISOString())
+
+            if (!bookings) {
+                setBookedSlots([])
+                return
+            }
+
+            // Convert bookings to 15-minute slot strings (HH:MM format)
+            const slots: string[] = []
+            bookings.forEach(booking => {
+                const start = new Date(booking.start_time)
+                const durationMinutes = booking.duration_minutes || 15
+
+                // Generate all 15-min slots covered by this booking
+                for (let i = 0; i < durationMinutes; i += 15) {
+                    const slotTime = new Date(start.getTime() + i * 60 * 1000)
+                    const hours = String(slotTime.getHours()).padStart(2, '0')
+                    const minutes = String(slotTime.getMinutes()).padStart(2, '0')
+                    slots.push(`${hours}:${minutes}`)
+                }
+            })
+
+            setBookedSlots(slots)
+        } catch (err) {
+            console.error('Error fetching booked slots:', err)
+            setBookedSlots([])
+        }
+    }
+
     const weekDates = useMemo(() => {
         const today = new Date()
         const startOfWeek = new Date(today)
@@ -138,6 +194,24 @@ export default function MentorBookingPage() {
         }
         return dates
     }, [weekOffset])
+
+    // Check if a slot and the next (slotCount - 1) consecutive slots are all available
+    const isSlotAvailable = (time: string, allSlots: string[], count: number): boolean => {
+        const timeIndex = allSlots.indexOf(time)
+        if (timeIndex === -1) return false
+
+        // Check if we have enough consecutive slots
+        if (timeIndex + count > allSlots.length) return false
+
+        // Check if all required slots are not booked
+        for (let i = 0; i < count; i++) {
+            const slotToCheck = allSlots[timeIndex + i]
+            if (bookedSlots.includes(slotToCheck)) {
+                return false
+            }
+        }
+        return true
+    }
 
     const getSlotsForDate = (date: Date) => {
         const year = date.getFullYear()
@@ -195,15 +269,22 @@ export default function MentorBookingPage() {
             const [h, m] = selectedTime.split(':').map(Number)
             const startDateTime = new Date(selectedDate)
             startDateTime.setHours(h, m, 0, 0)
-            const endDateTime = new Date(startDateTime)
-            endDateTime.setHours(h + 1, m, 0, 0)
 
+            // Calculate end time based on slot count (each slot is 15 minutes)
+            const durationMinutes = slotCount * 15
+            const endDateTime = new Date(startDateTime)
+            endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes)
+
+            // Convert to ISO/UTC format for storage
+            // The user's browser timezone is preserved in the Date object,
+            // and toISOString() converts it to UTC for consistent storage
             const result = await processBooking({
                 mentorId,
                 studentId: user.id,
-                startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString(),
-                durationMinutes: 60, // Default 1 hour
+                startTime: startDateTime.toISOString(), // Stored in UTC
+                endTime: endDateTime.toISOString(),     // Stored in UTC
+                durationMinutes: durationMinutes,
+                slotCount: slotCount,
             })
 
             if (!result.success) {
@@ -297,7 +378,7 @@ export default function MentorBookingPage() {
                             <div className="flex items-center gap-3 text-sm">
                                 <Clock className="w-4 h-4 text-indigo-500 flex-shrink-0" />
                                 <span className="font-medium text-slate-700 dark:text-slate-300">
-                                    {selectedTime && formatTime(selectedTime)} (1 hour)
+                                    {selectedTime && formatTime(selectedTime)} ({slotCount * 15} minutes)
                                 </span>
                             </div>
                             {bookedInfo.meetLink && (
@@ -377,11 +458,6 @@ export default function MentorBookingPage() {
                             <div className="pt-14 px-6 pb-6">
                                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{mentor.profiles?.full_name}</h1>
                                 <div className="flex items-center gap-4 mb-6">
-                                    <div className="flex items-center gap-1.5">
-                                        <IndianRupee className="w-4 h-4 text-emerald-500" />
-                                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">₹{mentor.hourly_rate}</span>
-                                        <span className="text-sm text-slate-400">/hour</span>
-                                    </div>
                                     {mentor.is_active && (
                                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -503,26 +579,70 @@ export default function MentorBookingPage() {
                                     <Clock className="w-5 h-5 text-indigo-500" />
                                     Available Times
                                 </h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                                     {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                                 </p>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+
+                                {/* Slot Duration Selector */}
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                                        Session Duration
+                                    </label>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => { setSlotCount(1); setSelectedTime(null); }}
+                                            className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 border-2 ${
+                                                slotCount === 1
+                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500'
+                                            }`}
+                                        >
+                                            <div className="text-base font-bold">15 min</div>
+                                            <div className="text-xs opacity-75">Single slot</div>
+                                        </button>
+                                        <button
+                                            onClick={() => { setSlotCount(2); setSelectedTime(null); }}
+                                            className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 border-2 ${
+                                                slotCount === 2
+                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500'
+                                            }`}
+                                        >
+                                            <div className="text-base font-bold">30 min</div>
+                                            <div className="text-xs opacity-75">Double slot</div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                                     {getSlotsForDate(selectedDate).length > 0 ? (
-                                        getSlotsForDate(selectedDate).map(time => {
-                                            const isSelectedTime = selectedTime === time
-                                            return (
-                                                <button
-                                                    key={time}
-                                                    onClick={() => setSelectedTime(time)}
-                                                    className={`py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 border-2 ${isSelectedTime
-                                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500'
+                                        (() => {
+                                            const allSlots = getSlotsForDate(selectedDate)
+                                            return allSlots.map(time => {
+                                                const isSelectedTime = selectedTime === time
+                                                const isBooked = bookedSlots.includes(time)
+                                                const hasEnoughConsecutiveSlots = isSlotAvailable(time, allSlots, slotCount)
+                                                const isDisabled = isBooked || !hasEnoughConsecutiveSlots
+
+                                                return (
+                                                    <button
+                                                        key={time}
+                                                        onClick={() => !isDisabled && setSelectedTime(time)}
+                                                        disabled={isDisabled}
+                                                        className={`py-2 px-2 rounded-lg text-xs font-medium transition-all duration-200 border-2 ${
+                                                            isSelectedTime
+                                                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                                                : isDisabled
+                                                                    ? 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed opacity-50'
+                                                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500 cursor-pointer'
                                                         }`}
-                                                >
-                                                    {formatTime(time)}
-                                                </button>
-                                            )
-                                        })
+                                                        title={isBooked ? 'Already booked' : !hasEnoughConsecutiveSlots ? `Need ${slotCount} consecutive slots` : ''}
+                                                    >
+                                                        {formatTime(time)}
+                                                    </button>
+                                                )
+                                            })
+                                        })()
                                     ) : (
                                         <div className="col-span-full py-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                                             <p className="text-slate-500 dark:text-slate-400 text-sm">No available time slots found for this date.</p>
@@ -539,7 +659,7 @@ export default function MentorBookingPage() {
                                                     {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {formatTime(selectedTime)}
                                                 </p>
                                                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                    1 hour • <span className="text-emerald-600 font-semibold">₹{mentor.hourly_rate}</span>
+                                                    {slotCount * 15} minutes
                                                 </p>
                                             </div>
                                             <button

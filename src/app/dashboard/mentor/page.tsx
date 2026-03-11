@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
     CheckCircle2, Clock, IndianRupee, Tag, User, Save, X,
     AlertCircle, Calendar, Video, Radio, BookOpen,
-    TrendingUp, Loader2, ExternalLink, ChevronLeft, ChevronRight
+    TrendingUp, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp
 } from 'lucide-react'
 
 interface MentorProfile {
@@ -32,6 +32,8 @@ interface Booking {
     student_id: string
     start_time: string
     end_time: string
+    duration_minutes: number
+    slot_count: number
     status: 'scheduled' | 'completed' | 'cancelled'
     meet_link: string | null
     profiles: { full_name: string }
@@ -63,6 +65,8 @@ export default function MentorDashboard() {
     const [savingProfile, setSavingProfile] = useState(false)
     const [savingAvailability, setSavingAvailability] = useState(false)
     const [markingComplete, setMarkingComplete] = useState<string | null>(null)
+    const [showCompletedBookings, setShowCompletedBookings] = useState(false)
+    const [showOlderPastBookings, setShowOlderPastBookings] = useState(false)
 
     const [bio, setBio] = useState('')
     const [background, setBackground] = useState('')
@@ -75,10 +79,14 @@ export default function MentorDashboard() {
 
     useEffect(() => {
         if (!authLoading && profile) {
-            if (profile.role !== 'mentor') router.replace('/dashboard')
-            else if (profile.id) fetchMentorData()
+            if (profile.role !== 'mentor') {
+                router.replace('/dashboard')
+            } else if (profile.id) {
+                fetchMentorData()
+            }
         }
-    }, [profile, authLoading, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profile?.id, profile?.role, authLoading, router])
 
     useEffect(() => {
         const id = setInterval(() => setTick(t => t + 1), 30_000)
@@ -135,7 +143,7 @@ export default function MentorDashboard() {
             const { data: bookingData } = await supabase
                 .from('bookings')
                 .select(`
-                    id, student_id, start_time, end_time, status, meet_link,
+                    id, student_id, start_time, end_time, duration_minutes, slot_count, status, meet_link,
                     profiles!bookings_student_id_fkey(full_name)
                 `)
                 .eq('mentor_id', profile!.id)
@@ -291,6 +299,11 @@ export default function MentorDashboard() {
     const totalEarned = completedBookings.length * (mentorProfile?.hourly_rate || 0)
     const pastScheduled = bookings.filter(b => b.status === 'scheduled' && new Date(b.end_time) < new Date())
 
+    // Split past scheduled into recent (show 3 most recent) and older (collapsible)
+    const RECENT_PAST_LIMIT = 3
+    const recentPastBookings = pastScheduled.slice(0, RECENT_PAST_LIMIT)
+    const olderPastBookings = pastScheduled.slice(RECENT_PAST_LIMIT)
+
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
@@ -321,7 +334,10 @@ export default function MentorDashboard() {
                         <p className="text-slate-500 dark:text-slate-400">Manage your professional presence and scheduling</p>
                     </div>
                     <button
-                        onClick={() => signOut()}
+                        onClick={async () => {
+                            await signOut()
+                            router.push('/login')
+                        }}
                         className="px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 hover:border-slate-300 transition-all font-medium"
                     >
                         Sign Out
@@ -381,8 +397,8 @@ export default function MentorDashboard() {
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {/* Upcoming / Active */}
-                            {upcomingBookings.concat(pastScheduled).map((booking) => {
+                            {/* Upcoming / Active Bookings - Always shown */}
+                            {upcomingBookings.map((booking) => {
                                 const state = getCallState(booking.start_time, booking.end_time)
                                 const isLive = state === 'live'
                                 const isReady = state === 'ready'
@@ -404,7 +420,7 @@ export default function MentorDashboard() {
                                                     <Calendar className="w-3.5 h-3.5" />
                                                     {formatDate(booking.start_time)}
                                                     <Clock className="w-3.5 h-3.5" />
-                                                    {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+                                                    {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes || 15} min)
                                                 </p>
                                             </div>
                                         </div>
@@ -471,19 +487,85 @@ export default function MentorDashboard() {
                                 )
                             })}
 
-                            {/* Completed sessions */}
-                            {completedBookings.length > 0 && (
-                                <>
-                                    <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/40">
-                                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed Sessions</p>
+                            {/* Recent Past Bookings (not marked completed yet) - Show 3 most recent */}
+                            {recentPastBookings.map((booking) => {
+                                const state = getCallState(booking.start_time, booking.end_time)
+                                const isLive = state === 'live'
+                                const isReady = state === 'ready'
+                                const isPastScheduled = state === 'past'
+                                const studentName = booking.profiles?.full_name || 'Unknown Student'
+
+                                return (
+                                    <div
+                                        key={booking.id}
+                                        className="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-amber-50/30 dark:bg-amber-950/10 border-l-2 border-amber-400 dark:border-amber-600"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">
+                                                {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-slate-900 dark:text-white">{studentName}</p>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                                                    <Calendar className="w-3.5 h-3.5" />
+                                                    {formatDate(booking.start_time)}
+                                                    <Clock className="w-3.5 h-3.5" />
+                                                    {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes || 15} min)
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
+                                                <AlertCircle className="w-3.5 h-3.5" />
+                                                Needs Review
+                                            </span>
+                                            <button
+                                                onClick={() => markCompleted(booking.id)}
+                                                disabled={markingComplete === booking.id}
+                                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-emerald-500/20"
+                                            >
+                                                {markingComplete === booking.id
+                                                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                    : <CheckCircle2 className="w-4 h-4" />
+                                                }
+                                                Mark as Completed
+                                            </button>
+                                        </div>
                                     </div>
-                                    {completedBookings.map(booking => {
+                                )
+                            })}
+
+                            {/* Older Past Bookings - Collapsible */}
+                            {olderPastBookings.length > 0 && (
+                                <>
+                                    <button
+                                        onClick={() => setShowOlderPastBookings(!showOlderPastBookings)}
+                                        className="w-full px-6 py-4 bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors flex items-center justify-between group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                Older Sessions Needing Review ({olderPastBookings.length})
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                {showOlderPastBookings ? 'Hide' : 'Show'}
+                                            </span>
+                                            {showOlderPastBookings ? (
+                                                <ChevronUp className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
+                                            )}
+                                        </div>
+                                    </button>
+                                    {showOlderPastBookings && olderPastBookings.map(booking => {
                                         const studentName = booking.profiles?.full_name || 'Unknown Student'
-                                        const earned = mentorProfile?.hourly_rate || 0
                                         return (
                                             <div
                                                 key={booking.id}
-                                                className="px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-opacity"
+                                                className="px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-50/20 dark:bg-amber-950/10 border-l-2 border-amber-300 dark:border-amber-700"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">
@@ -492,7 +574,67 @@ export default function MentorDashboard() {
                                                     <div>
                                                         <p className="font-medium text-slate-900 dark:text-white text-sm">{studentName}</p>
                                                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                            {formatDate(booking.start_time)} • {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+                                                            {formatDate(booking.start_time)} • {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes || 15} min)
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => markCompleted(booking.id)}
+                                                    disabled={markingComplete === booking.id}
+                                                    className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg text-xs font-semibold transition-colors"
+                                                >
+                                                    {markingComplete === booking.id
+                                                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        : <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    }
+                                                    Mark Completed
+                                                </button>
+                                            </div>
+                                        )
+                                    })}
+                                </>
+                            )}
+
+                            {/* Completed sessions - Collapsible */}
+                            {completedBookings.length > 0 && (
+                                <>
+                                    <button
+                                        onClick={() => setShowCompletedBookings(!showCompletedBookings)}
+                                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                Completed Sessions ({completedBookings.length})
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                {showCompletedBookings ? 'Hide' : 'Show'}
+                                            </span>
+                                            {showCompletedBookings ? (
+                                                <ChevronUp className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
+                                            )}
+                                        </div>
+                                    </button>
+                                    {showCompletedBookings && completedBookings.map(booking => {
+                                        const studentName = booking.profiles?.full_name || 'Unknown Student'
+                                        const earned = mentorProfile?.hourly_rate || 0
+                                        return (
+                                            <div
+                                                key={booking.id}
+                                                className="px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-opacity border-l-2 border-emerald-200 dark:border-emerald-800"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">
+                                                        {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-slate-900 dark:text-white text-sm">{studentName}</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                            {formatDate(booking.start_time)} • {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes || 15} min)
                                                         </p>
                                                     </div>
                                                 </div>

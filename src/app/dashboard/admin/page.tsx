@@ -117,15 +117,18 @@ export default function AdminDashboard() {
                 authorizedStudents: authorizedStudents || 0,
             })
 
-            if (mentorsList) {
+            if (mentorsList && Array.isArray(mentorsList)) {
                 setRecentMentors(
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    mentorsList.map((m: any) => ({
-                        id: m.id,
-                        full_name: m.profiles?.full_name || null,
-                        email: m.profiles?.email || null,
-                        is_active: m.is_active,
-                        hourly_rate: m.hourly_rate,
+                    mentorsList.map((m) => ({
+                        id: m.id || '',
+                        full_name: (m.profiles && typeof m.profiles === 'object' && 'full_name' in m.profiles)
+                            ? (m.profiles.full_name as string | null)
+                            : null,
+                        email: (m.profiles && typeof m.profiles === 'object' && 'email' in m.profiles)
+                            ? (m.profiles.email as string | null)
+                            : null,
+                        is_active: Boolean(m.is_active),
+                        hourly_rate: typeof m.hourly_rate === 'number' ? m.hourly_rate : null,
                     }))
                 )
             }
@@ -144,17 +147,28 @@ export default function AdminDashboard() {
                 .order('start_time', { ascending: false })
                 .limit(5)
 
-            if (sessionsList) {
+            if (sessionsList && Array.isArray(sessionsList)) {
                 setRecentSessions(
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    sessionsList.map((s: any) => ({
-                        id: s.id,
-                        studentName: s.student_profiles?.full_name || 'Unknown',
-                        mentorName: s.mentor_profiles?.profiles?.full_name || 'Unknown',
-                        startTime: s.start_time,
-                        duration: s.duration_minutes || 60,
-                        status: s.status,
-                    }))
+                    sessionsList.map((s) => {
+                        const studentName = (s.student_profiles && typeof s.student_profiles === 'object' && 'full_name' in s.student_profiles)
+                            ? String(s.student_profiles.full_name || 'Unknown')
+                            : 'Unknown'
+
+                        const mentorName = (s.mentor_profiles && typeof s.mentor_profiles === 'object' && 'profiles' in s.mentor_profiles)
+                            ? ((s.mentor_profiles.profiles && typeof s.mentor_profiles.profiles === 'object' && 'full_name' in s.mentor_profiles.profiles)
+                                ? String(s.mentor_profiles.profiles.full_name || 'Unknown')
+                                : 'Unknown')
+                            : 'Unknown'
+
+                        return {
+                            id: s.id || '',
+                            studentName,
+                            mentorName,
+                            startTime: s.start_time || new Date().toISOString(),
+                            duration: typeof s.duration_minutes === 'number' ? s.duration_minutes : 60,
+                            status: s.status || 'scheduled',
+                        }
+                    })
                 )
             }
         } catch (error) {
