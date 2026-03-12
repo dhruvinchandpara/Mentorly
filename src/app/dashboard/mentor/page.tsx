@@ -296,7 +296,14 @@ export default function MentorDashboard() {
     // Derived stats
     const upcomingBookings = bookings.filter(b => b.status === 'scheduled' && new Date(b.end_time) >= new Date())
     const completedBookings = bookings.filter(b => b.status === 'completed')
-    const totalEarned = completedBookings.length * (mentorProfile?.hourly_rate || 0)
+
+    // Calculate total earned based on actual booking durations
+    const totalEarned = completedBookings.reduce((sum, booking) => {
+        const duration = booking.duration_minutes || 60
+        const earned = ((mentorProfile?.hourly_rate || 0) * duration) / 60
+        return sum + earned
+    }, 0)
+
     const pastScheduled = bookings.filter(b => b.status === 'scheduled' && new Date(b.end_time) < new Date())
 
     // Split past scheduled into recent (show 3 most recent) and older (collapsible)
@@ -371,7 +378,7 @@ export default function MentorDashboard() {
                         <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center mb-3">
                             <TrendingUp className="w-4 h-4 text-white" />
                         </div>
-                        <p className="text-2xl font-bold text-white">₹{totalEarned}</p>
+                        <p className="text-2xl font-bold text-white">₹{Math.round(totalEarned).toLocaleString('en-IN')}</p>
                         <p className="text-xs text-emerald-100 mt-0.5">Total Earned</p>
                     </div>
                 </div>
@@ -621,7 +628,8 @@ export default function MentorDashboard() {
                                     </button>
                                     {showCompletedBookings && completedBookings.map(booking => {
                                         const studentName = booking.profiles?.full_name || 'Unknown Student'
-                                        const earned = mentorProfile?.hourly_rate || 0
+                                        const duration = booking.duration_minutes || 60
+                                        const earned = Math.round(((mentorProfile?.hourly_rate || 0) * duration) / 60)
                                         return (
                                             <div
                                                 key={booking.id}
