@@ -2,56 +2,56 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    })
+ let supabaseResponse = NextResponse.next({
+ request,
+ })
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll()
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        request.cookies.set(name, value)
-                    )
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    )
-                },
-            },
-        }
-    )
+ const supabase = createServerClient(
+ process.env.NEXT_PUBLIC_SUPABASE_URL!,
+ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+ {
+ cookies: {
+ getAll() {
+ return request.cookies.getAll()
+ },
+ setAll(cookiesToSet) {
+ cookiesToSet.forEach(({ name, value, options }) =>
+ request.cookies.set(name, value)
+ )
+ supabaseResponse = NextResponse.next({
+ request,
+ })
+ cookiesToSet.forEach(({ name, value, options }) =>
+ supabaseResponse.cookies.set(name, value, options)
+ )
+ },
+ },
+ }
+ )
 
-    // IMPORTANT: Always refresh session to prevent expiry issues
-    // But only check auth and redirect for protected routes
-    const isPublicRoute =
-        request.nextUrl.pathname.startsWith('/login') ||
-        request.nextUrl.pathname.startsWith('/auth') ||
-        request.nextUrl.pathname.startsWith('/explore') ||
-        request.nextUrl.pathname.startsWith('/mentor') ||
-        request.nextUrl.pathname === '/'
+ // IMPORTANT: Always refresh session to prevent expiry issues
+ // But only check auth and redirect for protected routes
+ const isPublicRoute =
+ request.nextUrl.pathname.startsWith('/login') ||
+ request.nextUrl.pathname.startsWith('/auth') ||
+ request.nextUrl.pathname.startsWith('/explore') ||
+ request.nextUrl.pathname.startsWith('/mentor') ||
+ request.nextUrl.pathname === '/'
 
-    console.log(`--- Middleware: ${request.nextUrl.pathname} (Public: ${isPublicRoute}) ---`)
+ console.log(`--- Middleware: ${request.nextUrl.pathname} (Public: ${isPublicRoute}) ---`)
 
-    // Always call getUser() to refresh the session, even on public routes
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+ // Always call getUser() to refresh the session, even on public routes
+ const {
+ data: { user },
+ } = await supabase.auth.getUser()
 
-    // Only redirect to login if user is not authenticated AND accessing protected route
-    if (!user && !isPublicRoute) {
-        console.log('--- Middleware: No user, redirecting to login ---')
-        const url = request.nextUrl.clone()
-        url.pathname = '/login'
-        return NextResponse.redirect(url)
-    }
+ // Only redirect to login if user is not authenticated AND accessing protected route
+ if (!user && !isPublicRoute) {
+ console.log('--- Middleware: No user, redirecting to login ---')
+ const url = request.nextUrl.clone()
+ url.pathname = '/login'
+ return NextResponse.redirect(url)
+ }
 
-    return supabaseResponse
+ return supabaseResponse
 }
