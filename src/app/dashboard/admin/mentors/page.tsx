@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { createMentor, updateMentor, toggleMentorStatus as toggleStatusAction } from '../actions'
-import type { CreateMentorInput, UpdateMentorInput } from '../actions'
+import { createMentor, updateMentor, toggleMentorStatus as toggleStatusAction, bulkImportMentors } from '../actions'
+import type { CreateMentorInput, UpdateMentorInput, BulkImportMentorInput, BulkImportResult } from '../actions'
 import {
  Search,
  UserCheck,
@@ -21,6 +21,9 @@ import {
  Tag,
  Copy,
  MoreVertical,
+ Upload,
+ Download,
+ FileText,
 } from 'lucide-react'
 import {
  DropdownMenu,
@@ -523,6 +526,417 @@ function SuccessModal({
  )
 }
 
+// ─── Bulk Import Modal ─────────────────────────────────────────
+function BulkImportModal({
+ onClose,
+ onSuccess,
+}: {
+ onClose: () => void
+ onSuccess: (result: BulkImportResult) => void
+}) {
+ const [csvContent, setCsvContent] = useState('')
+ const [importing, setImporting] = useState(false)
+ const [error, setError] = useState<string | null>(null)
+ const fileInputRef = useRef<HTMLInputElement>(null)
+
+ const downloadTemplate = () => {
+ const template = `Full Name,Email,Bio,Background,Expertise,Hourly Rate
+John Doe,john@example.com,Product Manager with 10 years experience,Former PM at Google and Meta,"Product Management,Strategy,Leadership",150
+Jane Smith,jane@example.com,Senior Engineer specializing in AI,PhD in ML from Stanford,"Engineering,AI/ML,Data Science",200`
+
+ const blob = new Blob([template], { type: 'text/csv' })
+ const url = URL.createObjectURL(blob)
+ const a = document.createElement('a')
+ a.href = url
+ a.download = 'mentor_import_template.csv'
+ a.click()
+ URL.revokeObjectURL(url)
+ }
+
+ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const file = e.target.files?.[0]
+ if (!file) return
+
+ const reader = new FileReader()
+ reader.onload = (event) => {
+ const content = event.target?.result as string
+ setCsvContent(content)
+ }
+ reader.readAsText(file)
+ }
+
+ const parseCSV = (csv: string): BulkImportMentorInput[] => {
+ const lines = csv.trim().split('\n')
+ if (lines.length < 2) return []
+
+ const mentors: BulkImportMentorInput[] = []
+
+ // Skip header row
+ for (let i = 1; i < lines.length; i++) {
+ const line = lines[i].trim()
+ if (!line) continue
+
+ // Parse CSV line (handle quoted fields)
+ const fields: string[] = []
+ let currentField = ''
+ let inQuotes = false
+
+ for (let j = 0; j < line.length; j++) {
+ const char = line[j]
+ if (char === '"') {
+ inQuotes = !inQuotes
+ } else if (char === ',' && !inQuotes) {
+ fields.push(currentField.trim())
+ currentField = ''
+ } else {
+ currentField += char
+ }
+ }
+ fields.push(currentField.trim())
+
+ const [fullName, email, bio, background, expertiseStr, hourlyRateStr] = fields
+
+ const mentor: BulkImportMentorInput = {
+ fullName: fullName || '',
+ email: email || '',
+ bio: bio || '',
+ background: background || '',
+ expertise: expertiseStr ? expertiseStr.split(',').map(e => e.trim()).filter(Boolean) : [],
+ hourlyRate: hourlyRateStr ? parseFloat(hourlyRateStr) : undefined,
+ }
+
+ mentors.push(mentor)
+ }
+
+ return mentors
+ }
+
+ const handleImport = async () => {
+ if (!csvContent.trim()) {
+ setError('Please upload a CSV file first')
+ return
+ }
+
+ setImporting(true)
+ setError(null)
+
+ try {
+ const mentors = parseCSV(csvContent)
+
+ if (mentors.length === 0) {
+ setError('No valid mentor data found in CSV')
+ setImporting(false)
+ return
+ }
+
+ const result = await bulkImportMentors(mentors)
+ onSuccess(result)
+ } catch (err) {
+ setError(err instanceof Error ? err.message : 'Failed to import mentors')
+ } finally {
+ setImporting(false)
+ }
+ }
+
+ return (
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+ <div
+ className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+ onClick={onClose}
+ />
+ <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-blue-200 max-h-[90vh] overflow-y-auto">
+ {/* Header */}
+ <div className="sticky top-0 bg-white px-6 py-5 border-b border-blue-200 flex items-center justify-between z-10 rounded-t-2xl">
+ <div>
+ <h2 className="text-xl font-bold text-blue-950">
+ Bulk Import Mentors
+ </h2>
+ <p className="text-sm text-blue-600 mt-0.5">
+ Upload a CSV file to import multiple mentors at once
+ </p>
+ </div>
+ <button
+ onClick={onClose}
+ className="p-2 rounded-lg hover:bg-blue-50 transition text-blue-600"
+ >
+ <X className="w-5 h-5" />
+ </button>
+ </div>
+
+ <div className="p-6 space-y-6">
+ {error && (
+ <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+ <XCircle className="w-5 h-5 flex-shrink-0" />
+ {error}
+ </div>
+ )}
+
+ {/* Template Download */}
+ <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+ <div className="flex items-start gap-3">
+ <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+ <div className="flex-1">
+ <h3 className="text-sm font-semibold text-blue-950 mb-1">
+ Download CSV Template
+ </h3>
+ <p className="text-xs text-blue-700 mb-3">
+ Download the template to see the required format. Include columns: Full Name, Email, Bio, Background, Expertise, Hourly Rate
+ </p>
+ <button
+ onClick={downloadTemplate}
+ className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition"
+ >
+ <Download className="w-4 h-4" />
+ Download Template
+ </button>
+ </div>
+ </div>
+ </div>
+
+ {/* File Upload */}
+ <div>
+ <label className="block text-sm font-medium text-blue-800 mb-2">
+ Upload CSV File
+ </label>
+ <div className="flex flex-col gap-3">
+ <input
+ ref={fileInputRef}
+ type="file"
+ accept=".csv"
+ onChange={handleFileUpload}
+ className="hidden"
+ />
+ <button
+ onClick={() => fileInputRef.current?.click()}
+ className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition text-blue-700 font-medium"
+ >
+ <Upload className="w-5 h-5" />
+ {csvContent ? 'Change File' : 'Choose CSV File'}
+ </button>
+ {csvContent && (
+ <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600" />
+ <span className="text-sm text-emerald-700 font-medium">
+ File loaded successfully ({parseCSV(csvContent).length} mentor{parseCSV(csvContent).length !== 1 ? 's' : ''} found)
+ </span>
+ </div>
+ )}
+ </div>
+ </div>
+
+ {/* Preview */}
+ {csvContent && (
+ <div>
+ <label className="block text-sm font-medium text-blue-800 mb-2">
+ Preview
+ </label>
+ <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 max-h-64 overflow-auto">
+ <pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap">
+ {csvContent.split('\n').slice(0, 6).join('\n')}
+ {csvContent.split('\n').length > 6 && '\n...'}
+ </pre>
+ </div>
+ </div>
+ )}
+
+ {/* Actions */}
+ <div className="flex items-center justify-end gap-3 pt-4 border-t border-blue-200">
+ <button
+ type="button"
+ onClick={onClose}
+ className="px-5 py-2.5 rounded-xl text-sm font-medium text-blue-800 hover:bg-blue-50 transition"
+ >
+ Cancel
+ </button>
+ <button
+ onClick={handleImport}
+ disabled={importing || !csvContent}
+ className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+ >
+ {importing ? (
+ <>
+ <Loader2 className="w-4 h-4 animate-spin" />
+ Importing...
+ </>
+ ) : (
+ <>
+ <Upload className="w-4 h-4" />
+ Import Mentors
+ </>
+ )}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ )
+}
+
+// ─── Bulk Import Results Modal ─────────────────────────────────
+function BulkImportResultsModal({
+ result,
+ onClose,
+}: {
+ result: BulkImportResult
+ onClose: () => void
+}) {
+ const [copiedAll, setCopiedAll] = useState(false)
+
+ const copyAllPasswords = () => {
+ if (!result.passwords) return
+
+ const text = result.passwords
+ .map(p => `${p.fullName} (${p.email}): ${p.password}`)
+ .join('\n')
+
+ navigator.clipboard.writeText(text)
+ setCopiedAll(true)
+ setTimeout(() => setCopiedAll(false), 2000)
+ }
+
+ const downloadPasswords = () => {
+ if (!result.passwords) return
+
+ const csv = 'Full Name,Email,Temporary Password\n' +
+ result.passwords.map(p => `${p.fullName},${p.email},${p.password}`).join('\n')
+
+ const blob = new Blob([csv], { type: 'text/csv' })
+ const url = URL.createObjectURL(blob)
+ const a = document.createElement('a')
+ a.href = url
+ a.download = 'mentor_passwords.csv'
+ a.click()
+ URL.revokeObjectURL(url)
+ }
+
+ return (
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+ <div
+ className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+ onClick={onClose}
+ />
+ <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-blue-200 max-h-[90vh] overflow-y-auto">
+ {/* Header */}
+ <div className="sticky top-0 bg-white px-6 py-5 border-b border-blue-200 rounded-t-2xl">
+ <div className="flex items-center justify-between">
+ <div>
+ <h2 className="text-xl font-bold text-blue-950">
+ Import Results
+ </h2>
+ <p className="text-sm text-blue-600 mt-0.5">
+ {result.successCount} of {result.totalProcessed} mentors imported successfully
+ </p>
+ </div>
+ <button
+ onClick={onClose}
+ className="p-2 rounded-lg hover:bg-blue-50 transition text-blue-600"
+ >
+ <X className="w-5 h-5" />
+ </button>
+ </div>
+ </div>
+
+ <div className="p-6 space-y-6">
+ {/* Summary Stats */}
+ <div className="grid grid-cols-3 gap-4">
+ <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+ <div className="text-2xl font-bold text-blue-950">{result.totalProcessed}</div>
+ <div className="text-xs text-blue-600 mt-1">Total Processed</div>
+ </div>
+ <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+ <div className="text-2xl font-bold text-emerald-950">{result.successCount}</div>
+ <div className="text-xs text-emerald-600 mt-1">Successful</div>
+ </div>
+ <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+ <div className="text-2xl font-bold text-red-950">{result.failureCount}</div>
+ <div className="text-xs text-red-600 mt-1">Failed</div>
+ </div>
+ </div>
+
+ {/* Passwords Section */}
+ {result.passwords && result.passwords.length > 0 && (
+ <div>
+ <div className="flex items-center justify-between mb-3">
+ <h3 className="text-sm font-semibold text-blue-950">
+ Temporary Passwords ({result.passwords.length})
+ </h3>
+ <div className="flex gap-2">
+ <button
+ onClick={copyAllPasswords}
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-medium text-blue-700 hover:bg-blue-50 transition"
+ >
+ {copiedAll ? (
+ <>
+ <CheckCircle className="w-3.5 h-3.5" />
+ Copied!
+ </>
+ ) : (
+ <>
+ <Copy className="w-3.5 h-3.5" />
+ Copy All
+ </>
+ )}
+ </button>
+ <button
+ onClick={downloadPasswords}
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition"
+ >
+ <Download className="w-3.5 h-3.5" />
+ Download CSV
+ </button>
+ </div>
+ </div>
+ <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 max-h-64 overflow-auto space-y-2">
+ {result.passwords.map((p, idx) => (
+ <div key={idx} className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
+ <div className="flex-1">
+ <p className="text-sm font-medium text-slate-900">{p.fullName}</p>
+ <p className="text-xs text-slate-500">{p.email}</p>
+ </div>
+ <code className="text-xs font-mono text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">
+ {p.password}
+ </code>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+
+ {/* Errors Section */}
+ {result.errors && result.errors.length > 0 && (
+ <div>
+ <h3 className="text-sm font-semibold text-red-950 mb-3">
+ Errors ({result.errors.length})
+ </h3>
+ <div className="bg-red-50 border border-red-200 rounded-xl p-4 max-h-64 overflow-auto space-y-2">
+ {result.errors.map((err, idx) => (
+ <div key={idx} className="flex items-start gap-2 p-2 bg-white rounded-lg border border-red-200">
+ <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+ <div className="flex-1">
+ <p className="text-xs font-medium text-red-900">
+ Row {err.row}: {err.email}
+ </p>
+ <p className="text-xs text-red-600 mt-0.5">{err.error}</p>
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+
+ {/* Close Button */}
+ <button
+ onClick={onClose}
+ className="w-full py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 transition"
+ >
+ Done
+ </button>
+ </div>
+ </div>
+ </div>
+ )
+}
+
 // ─── Main Page Component ────────────────────────────────────────
 export default function MentorManagement() {
  const { supabase, loading: authLoading } = useAuth()
@@ -542,6 +956,8 @@ export default function MentorManagement() {
  const [editingMentor, setEditingMentor] =
  useState<MentorWithProfile | null>(null)
  const [tempPassword, setTempPassword] = useState<string | null>(null)
+ const [showBulkImport, setShowBulkImport] = useState(false)
+ const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null)
 
  // Collect all unique tags
  const allTags = Array.from(
@@ -676,6 +1092,17 @@ export default function MentorManagement() {
  fetchMentors()
  }
 
+ const handleBulkImportSuccess = (result: BulkImportResult) => {
+ setShowBulkImport(false)
+ setBulkImportResult(result)
+ showToast(
+ `Successfully imported ${result.successCount} mentor(s)${result.failureCount > 0 ? `. ${result.failureCount} failed.` : ''}`,
+ result.failureCount > 0 ? 'error' : 'success'
+ )
+ setLoading(true)
+ fetchMentors()
+ }
+
  const openEditModal = (mentor: MentorWithProfile) => {
  setEditingMentor(mentor)
  setModalMode('edit')
@@ -773,6 +1200,22 @@ export default function MentorManagement() {
  />
  )}
 
+ {/* Bulk Import Modal */}
+ {showBulkImport && (
+ <BulkImportModal
+ onClose={() => setShowBulkImport(false)}
+ onSuccess={handleBulkImportSuccess}
+ />
+ )}
+
+ {/* Bulk Import Results Modal */}
+ {bulkImportResult && (
+ <BulkImportResultsModal
+ result={bulkImportResult}
+ onClose={() => setBulkImportResult(null)}
+ />
+ )}
+
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
  <div>
@@ -783,6 +1226,15 @@ export default function MentorManagement() {
  Review, approve, and manage all mentor accounts.
  </p>
  </div>
+ <div className="flex gap-3">
+ <button
+ onClick={() => setShowBulkImport(true)}
+ id="bulk-import-mentors"
+ className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
+ >
+ <Upload className="w-4 h-4" />
+ Bulk Import
+ </button>
  <button
  onClick={() => setModalMode('add')}
  id="add-new-mentor"
@@ -791,6 +1243,7 @@ export default function MentorManagement() {
  <Plus className="w-4 h-4" />
  Add New Mentor
  </button>
+ </div>
  </div>
 
  {/* Controls Row */}

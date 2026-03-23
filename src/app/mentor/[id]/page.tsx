@@ -167,18 +167,30 @@ export default function MentorBookingPage() {
       try {
         const { data, error } = await supabase
           .from('bookings')
-          .select('start_time')
+          .select('start_time, end_time, duration_minutes, slot_count')
           .eq('mentor_id', mentorId)
+          .eq('status', 'scheduled')
           .gte('start_time', startOfDay.toISOString())
           .lte('start_time', endOfDay.toISOString())
 
         if (!error && data) {
-          const slots = data.map((b: { start_time: string }) => {
-            const d = new Date(b.start_time)
-            const h = String(d.getHours()).padStart(2, '0')
-            const m = String(d.getMinutes()).padStart(2, '0')
-            return `${h}:${m}`
+          const slots: string[] = []
+
+          // For each booking, mark ALL 15-minute slots as booked
+          data.forEach((booking: { start_time: string; end_time: string; duration_minutes: number; slot_count: number }) => {
+            const startTime = new Date(booking.start_time)
+            const slotCount = booking.slot_count || Math.floor(booking.duration_minutes / 15)
+
+            // Generate all time slots covered by this booking
+            for (let i = 0; i < slotCount; i++) {
+              const slotTime = new Date(startTime)
+              slotTime.setMinutes(slotTime.getMinutes() + (i * 15))
+              const h = String(slotTime.getHours()).padStart(2, '0')
+              const m = String(slotTime.getMinutes()).padStart(2, '0')
+              slots.push(`${h}:${m}`)
+            }
           })
+
           setBookedSlots(slots)
         }
       } catch (err) {

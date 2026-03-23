@@ -326,3 +326,116 @@ export async function grantAdminRole(email: string) {
  }
  }
 }
+
+export type BulkImportMentorInput = {
+ fullName: string
+ email: string
+ bio?: string
+ background?: string
+ expertise?: string[]
+ hourlyRate?: number
+}
+
+export type BulkImportResult = {
+ success: boolean
+ totalProcessed: number
+ successCount: number
+ failureCount: number
+ errors: { row: number; email: string; error: string }[]
+ passwords?: { email: string; password: string; fullName: string }[]
+}
+
+export async function bulkImportMentors(mentors: BulkImportMentorInput[]): Promise<BulkImportResult> {
+ const supabase = createAdminClient()
+ const result: BulkImportResult = {
+ success: true,
+ totalProcessed: mentors.length,
+ successCount: 0,
+ failureCount: 0,
+ errors: [],
+ passwords: [],
+ }
+
+ for (let i = 0; i < mentors.length; i++) {
+ const mentor = mentors[i]
+
+ try {
+ // Validate required fields
+ if (!mentor.email || !mentor.fullName) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email || 'N/A',
+ error: 'Missing required fields (email or full name)',
+ })
+ result.failureCount++
+ continue
+ }
+
+ // Basic email validation
+ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+ if (!emailRegex.test(mentor.email)) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email,
+ error: 'Invalid email format',
+ })
+ result.failureCount++
+ continue
+ }
+
+ // Check if user already exists
+ const { data: existingUser } = await supabase
+ .from('profiles')
+ .select('id')
+ .eq('email', mentor.email.toLowerCase().trim())
+ .single()
+
+ if (existingUser) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email,
+ error: 'User with this email already exists',
+ })
+ result.failureCount++
+ continue
+ }
+
+ // Create the mentor using the existing createMentor function
+ const mentorResult = await createMentor({
+ fullName: mentor.fullName.trim(),
+ email: mentor.email.toLowerCase().trim(),
+ bio: mentor.bio || '',
+ background: mentor.background || '',
+ expertise: mentor.expertise || [],
+ hourlyRate: mentor.hourlyRate || null,
+ })
+
+ if (mentorResult.success && mentorResult.tempPassword) {
+ result.successCount++
+ result.passwords?.push({
+ email: mentor.email.toLowerCase().trim(),
+ password: mentorResult.tempPassword,
+ fullName: mentor.fullName.trim(),
+ })
+ } else {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email,
+ error: mentorResult.error || 'Unknown error',
+ })
+ result.failureCount++
+ }
+ } catch (error) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email || 'N/A',
+ error: error instanceof Error ? error.message : 'Unexpected error',
+ })
+ result.failureCount++
+ }
+ }
+
+ result.success = result.failureCount === 0
+
+ return result
+}
