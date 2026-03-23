@@ -4,24 +4,34 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { addAuthorizedStudent, removeAuthorizedStudent, bulkAddAuthorizedStudents } from '../actions'
 import {
- Users,
  Plus,
- Trash2,
  Mail,
  Search,
  Loader2,
  AlertCircle,
  CheckCircle,
- ArrowLeft,
  Upload,
  FileText,
- X
+ X,
+ MoreVertical,
+ UserX,
+ Clock
 } from 'lucide-react'
-import Link from 'next/link'
+import {
+ DropdownMenu,
+ DropdownMenuContent,
+ DropdownMenuItem,
+ DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface AuthorizedStudent {
  email: string
  created_at: string
+ full_name?: string | null
+ totalSessions?: number
+ totalHours?: number
 }
 
 export default function AuthorizedStudentsPage() {
@@ -43,13 +53,56 @@ export default function AuthorizedStudentsPage() {
  const fetchStudents = async () => {
  setLoading(true)
  try {
- const { data, error } = await supabase
+ const { data: authStudents, error } = await supabase
  .from('authorized_students')
  .select('*')
  .order('created_at', { ascending: false })
 
  if (error) throw error
- setStudents(data || [])
+
+ // Fetch all profiles for authorized students
+ const { data: profiles } = await supabase
+ .from('profiles')
+ .select('id, email, full_name')
+ .in('email', (authStudents || []).map((s: any) => s.email))
+
+ // Fetch completed bookings to calculate sessions and hours
+ const { data: bookingsData } = await supabase
+ .from('bookings')
+ .select('student_id, duration_minutes, status')
+ .eq('status', 'completed')
+
+ // Create maps for quick lookup
+ const profilesMap: Record<string, { full_name: string | null }> = {}
+ if (profiles) {
+ profiles.forEach((p: any) => {
+ profilesMap[p.email || ''] = { full_name: p.full_name }
+ })
+ }
+
+ const sessionStatsMap: Record<string, { sessions: number; hours: number }> = {}
+ if (bookingsData && profiles) {
+ bookingsData.forEach((booking: any) => {
+ const profile = profiles.find((p: any) => p.id === booking.student_id)
+ if (profile?.email) {
+ if (!sessionStatsMap[profile.email]) {
+ sessionStatsMap[profile.email] = { sessions: 0, hours: 0 }
+ }
+ sessionStatsMap[profile.email].sessions += 1
+ sessionStatsMap[profile.email].hours += (booking.duration_minutes || 60) / 60
+ }
+ })
+ }
+
+ // Combine data
+ const studentsWithStats = (authStudents || []).map((student: any) => ({
+ ...student,
+ full_name: profilesMap[student.email]?.full_name || null,
+ totalSessions: sessionStatsMap[student.email]?.sessions || 0,
+ totalHours: sessionStatsMap[student.email]?.hours || 0,
+ }))
+
+ setStudents(studentsWithStats)
  } catch (error) {
  console.error('Error fetching authorized students:', error)
  } finally {
@@ -152,28 +205,19 @@ export default function AuthorizedStudentsPage() {
  }
 
  const filteredStudents = students.filter(s =>
- s.email.toLowerCase().includes(searchQuery.toLowerCase())
+ s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+ (s.full_name && s.full_name.toLowerCase().includes(searchQuery.toLowerCase()))
  )
 
  return (
- <div className="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
- <div className="mb-8 flex items-center justify-between">
- <div>
- <Link
- href="/dashboard/admin"
- className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-600 transition-colors mb-2"
- >
- <ArrowLeft className="w-4 h-4" />
- Back to Overview
- </Link>
- <h1 className="text-3xl font-bold text-blue-950 tracking-tight flex items-center gap-3">
- <Users className="w-8 h-8 text-blue-600" />
+ <div className="space-y-6">
+ <div className="mb-6">
+ <h1 className="text-2xl font-bold text-blue-950 tracking-tight flex items-center gap-3">
  Authorized Students
  </h1>
- <p className="text-blue-600 mt-1">
+ <p className="text-slate-600 text-sm mt-1">
  Only students whose emails are in this list will be allowed to use the application.
  </p>
- </div>
  </div>
 
  {/* Add Student Form */}
@@ -226,57 +270,116 @@ export default function AuthorizedStudentsPage() {
  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
  <input
  type="text"
- placeholder="Search emails..."
+ placeholder="Search by name or email..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
  className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-blue-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
  />
  </div>
- <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">
+ <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
  {filteredStudents.length} Students
  </span>
  </div>
 
- <div className="divide-y divide-slate-50 ">
  {loading ? (
  <div className="p-20 text-center">
- <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto" />
- <p className="mt-4 text-blue-600">Loading student list...</p>
+ <Loader2 className="w-10 h-10 animate-spin text-slate-600 mx-auto" />
+ <p className="mt-4 text-slate-600">Loading student list...</p>
  </div>
  ) : filteredStudents.length === 0 ? (
  <div className="p-20 text-center">
  <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
  <Mail className="w-8 h-8 text-slate-400" />
  </div>
- <h3 className="text-lg font-semibold text-blue-950 ">No authorized students</h3>
- <p className="text-sm text-blue-600 max-w-xs mx-auto mt-1">
+ <h3 className="text-lg font-semibold text-blue-950">No authorized students</h3>
+ <p className="text-sm text-slate-600 max-w-xs mx-auto mt-1">
  {searchQuery ? 'No students match your search.' : 'Add a student email above to grant them access.'}
  </p>
  </div>
  ) : (
- filteredStudents.map((student) => (
- <div key={student.email} className="p-4 px-6 flex items-center justify-between hover:bg-slate-50 :bg-slate-800/50 transition-colors">
- <div className="flex items-center gap-4">
- <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">
- {student.email.charAt(0).toUpperCase()}
+ <div className="overflow-x-auto">
+ <table className="w-full">
+ <thead>
+ <tr className="border-b border-blue-200">
+ <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ Student
+ </th>
+ <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ Email
+ </th>
+ <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ Sessions Completed
+ </th>
+ <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ Hours Completed
+ </th>
+ <th className="text-right px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ Actions
+ </th>
+ </tr>
+ </thead>
+ <tbody className="divide-y divide-slate-100">
+ {filteredStudents.map((student) => (
+ <tr key={student.email} className="hover:bg-slate-50 transition-colors">
+ <td className="px-6 py-4">
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+ {(student.full_name || student.email).charAt(0).toUpperCase()}
  </div>
  <div>
- <p className="text-sm font-semibold text-blue-950 ">{student.email}</p>
- <p className="text-xs text-blue-600">Added on {new Date(student.created_at).toLocaleDateString()}</p>
+ <p className="text-sm font-medium text-blue-950">
+ {student.full_name || 'Not registered'}
+ </p>
+ <p className="text-xs text-slate-500">
+ Added {new Date(student.created_at).toLocaleDateString()}
+ </p>
  </div>
  </div>
- <button
+ </td>
+ <td className="px-6 py-4">
+ <p className="text-sm text-blue-950">{student.email}</p>
+ </td>
+ <td className="px-6 py-4">
+ <Badge variant="secondary" className="text-slate-700">
+ {student.totalSessions || 0} sessions
+ </Badge>
+ </td>
+ <td className="px-6 py-4">
+ <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200">
+ <Clock className="w-3.5 h-3.5" />
+ {student.totalHours?.toFixed(1) || '0.0'} hrs
+ </span>
+ </td>
+ <td className="px-6 py-4 text-right">
+ <DropdownMenu>
+ <DropdownMenuTrigger
+ className="p-2 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors"
+ disabled={actionLoading}
+ >
+ <MoreVertical className="w-4 h-4" />
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="end" className="w-48">
+ <DropdownMenuItem
  onClick={() => handleRemoveStudent(student.email)}
  disabled={actionLoading}
- className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 :bg-rose-900/20 rounded-lg transition-all"
- title="Remove authorization"
+ className="text-red-600 focus:text-red-600"
  >
- <Trash2 className="w-5 h-5" />
- </button>
- </div>
- ))
+ {actionLoading ? (
+ <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+ ) : (
+ <UserX className="mr-2 h-4 w-4" />
  )}
+ Remove Access
+ </DropdownMenuItem>
+ </DropdownMenuContent>
+ </DropdownMenu>
+ </td>
+ </tr>
+ ))}
+ </tbody>
+ </table>
  </div>
+ )}
  </div>
 
  {/* Bulk Import Modal */}

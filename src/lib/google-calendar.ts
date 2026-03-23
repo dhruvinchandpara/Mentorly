@@ -1,6 +1,9 @@
 import { google } from 'googleapis'
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar']
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.events'
+]
 
 export async function createGoogleMeeting(params: {
  title: string
@@ -9,7 +12,6 @@ export async function createGoogleMeeting(params: {
  endTime: string
  attendees: string[] // List of emails
  calendarId?: string // The Mentor's email
- fallbackLink?: string // Jitsi link to include in description
 }) {
  let clientEmail = process.env.GOOGLE_CLIENT_EMAIL
  let privateKey = process.env.GOOGLE_PRIVATE_KEY
@@ -41,57 +43,74 @@ export async function createGoogleMeeting(params: {
 
  const calendar = google.calendar({ version: 'v3', auth })
 
- // Detailed description including the fallback link
- const finalDescription = params.fallbackLink
- ? `${params.description}\n\nJoin Meeting: ${params.fallbackLink}`
- : params.description
-
  const baseEvent = {
  summary: params.title,
- description: finalDescription,
- location: params.fallbackLink || undefined,
+ description: params.description,
  start: { dateTime: params.startTime },
  end: { dateTime: params.endTime },
  attendees: params.attendees.map(email => ({ email })),
  }
 
- const targetCalendarId = params.calendarId || 'primary'
+ // Get the service account email to use as the calendar ID
+ const serviceAccountEmail = clientEmail
 
- // Strategy 1 & 2: Try with Conference Data (Google Meet)
- const solutionKeys = [{ type: 'hangoutsMeet' }, { type: 'video' }]
-
- for (const solutionKey of solutionKeys) {
- console.log(`--- Google API: Attempting ${targetCalendarId} with ${solutionKey.type} ---`)
+ // Strategy 1: Create event on service account's calendar without attendees first
+ console.log('--- Google API: Strategy 1 - Create on service account calendar ---')
  try {
  const response = await calendar.events.insert({
- calendarId: targetCalendarId,
+ calendarId: serviceAccountEmail,
  requestBody: {
  ...baseEvent,
+ attendees: [], // Don't add attendees in initial creation to avoid DWD error
  conferenceData: {
  createRequest: {
  requestId: `mentorly-${Date.now()}-${Math.random().toString(36).substring(7)}`,
- conferenceSolutionKey: solutionKey,
+ conferenceSolutionKey: { type: 'hangoutsMeet' },
  },
  },
  },
  conferenceDataVersion: 1,
- sendUpdates: params.calendarId ? 'all' : 'none',
+ sendUpdates: 'none',
  })
 
  const meetLink = response.data.conferenceData?.entryPoints?.find(ep => ep.entryPointType === 'video')?.uri
- console.log('--- Google API: Success ---')
- return {
+
+ if (meetLink && response.data.id) {
+ console.log('--- Google API: Event created with Meet link ---')
+
+ // Now update the event to add attendees (if any)
+ if (baseEvent.attendees.length > 0) {
+ try {
+ console.log('--- Google API: Adding attendees to event ---')
+ await calendar.events.patch({
+ calendarId: serviceAccountEmail,
  eventId: response.data.id,
- meetLink: meetLink || null, // ONLY return meetLink if it's a real conference link
- calendarLink: response.data.htmlLink
- }
- } catch (err: any) {
- console.warn(`--- Google API: Attempt with ${solutionKey.type} Failed: ${err.message} ---`)
+ requestBody: {
+ attendees: baseEvent.attendees,
+ },
+ sendUpdates: 'all',
+ })
+ console.log('--- Google API: Attendees added successfully ---')
+ } catch (patchErr: any) {
+ console.warn(`--- Google API: Could not add attendees: ${patchErr.message} ---`)
+ // Continue anyway - we have the Meet link
  }
  }
 
- // Strategy 3: Try WITHOUT attendees (to avoid DWD error) but WITH conference data
- console.log('--- Google API: Attempt 3 - No Attendees, WITH Conference Data ---')
+ console.log('--- Google API: Success - Meet link generated ---')
+ return {
+ eventId: response.data.id,
+ meetLink: meetLink,
+ calendarLink: response.data.htmlLink
+ }
+ }
+ console.warn('--- Google API: Event created but no Meet link in response ---')
+ } catch (err: any) {
+ console.warn(`--- Google API: Strategy 1 Failed: ${err.message} ---`)
+ }
+
+ // Strategy 2: Try on primary calendar
+ console.log('--- Google API: Strategy 2 - Try primary calendar ---')
  try {
  const response = await calendar.events.insert({
  calendarId: 'primary',
@@ -100,7 +119,7 @@ export async function createGoogleMeeting(params: {
  attendees: [],
  conferenceData: {
  createRequest: {
- requestId: `mentorly-${Date.now()}-noattendees`,
+ requestId: `mentorly-${Date.now()}-v2`,
  conferenceSolutionKey: { type: 'hangoutsMeet' },
  },
  },
@@ -108,29 +127,35 @@ export async function createGoogleMeeting(params: {
  conferenceDataVersion: 1,
  })
  const meetLink = response.data.conferenceData?.entryPoints?.find(ep => ep.entryPointType === 'video')?.uri
- console.log('--- Google API: Success (No Attendees fallback) ---')
- return {
+
+ if (meetLink && response.data.id) {
+ // Add attendees if needed
+ if (baseEvent.attendees.length > 0) {
+ try {
+ await calendar.events.patch({
+ calendarId: 'primary',
  eventId: response.data.id,
- meetLink: meetLink || null,
- calendarLink: response.data.htmlLink
+ requestBody: { attendees: baseEvent.attendees },
+ sendUpdates: 'all',
+ })
+ } catch (patchErr) {
+ console.warn('Could not add attendees, but Meet link created')
  }
- } catch (err) {
- console.warn(`--- Google API: Attempt 3 Failed ---`)
  }
 
- // Strategy 4: Absolute fallback - Just a basic calendar event
- console.log('--- Google API: Attempt 4 - Absolute Minimal ---')
- const response = await calendar.events.insert({
- calendarId: 'primary',
- requestBody: { ...baseEvent, attendees: [] },
- sendUpdates: 'none',
- })
- console.log('--- Google API: Success (Absolute Minimal) ---')
+ console.log('--- Google API: Success - Meet link generated ---')
  return {
  eventId: response.data.id,
- meetLink: null,
+ meetLink: meetLink,
  calendarLink: response.data.htmlLink
  }
+ }
+ } catch (err: any) {
+ console.warn(`--- Google API: Strategy 2 Failed: ${err.message} ---`)
+ }
+
+ // If we reach here, we couldn't create a Google Meet link
+ throw new Error('Failed to create Google Meet link. Service accounts may not have permission to create Google Meet conferences. Consider using OAuth2 with a regular Google Workspace account or enabling domain-wide delegation.')
 
  } catch (error: any) {
  console.error('--- Google API: CRITICAL FAILURE ---')

@@ -1,16 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
-const geistSans = Geist({
- variable: "--font-geist-sans",
+// Modern, professional sans-serif - exceptional for UI clarity
+const inter = Inter({
+ variable: "--font-inter",
  subsets: ["latin"],
+ display: "swap",
+ weight: ["400", "500", "600", "700"], // Reduced weights for faster loading
+ preload: true,
+ fallback: ['system-ui', 'arial'],
 });
 
-const geistMono = Geist_Mono({
- variable: "--font-geist-mono",
+// Sharp, modern monospace for code and data
+const jetbrainsMono = JetBrains_Mono({
+ variable: "--font-jetbrains-mono",
  subsets: ["latin"],
+ display: "swap",
+ weight: ["400", "600"], // Reduced weights for faster loading
+ preload: false, // Only preload primary font
+ fallback: ['monospace'],
 });
 
 export const metadata: Metadata = {
@@ -39,7 +49,7 @@ export default function RootLayout({
  return (
  <html lang="en" suppressHydrationWarning>
  <body
- className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-blue-950 `}
+ className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
  suppressHydrationWarning
  >
  <AuthProvider>

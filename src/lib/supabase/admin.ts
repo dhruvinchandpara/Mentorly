@@ -17,3 +17,33 @@ export function createAdminClient() {
  },
  })
 }
+
+/**
+ * Get the admin user ID from the ADMIN_EMAIL environment variable
+ * @returns The admin user ID
+ * @throws Error if ADMIN_EMAIL is not set or admin user not found
+ */
+export async function getAdminUserId(): Promise<string> {
+ const adminEmail = process.env.ADMIN_EMAIL
+
+ if (!adminEmail) {
+ throw new Error('ADMIN_EMAIL is not set in environment variables.')
+ }
+
+ const supabase = createAdminClient()
+
+ const { data: adminProfile, error } = await supabase
+ .from('profiles')
+ .select('id')
+ .eq('email', adminEmail)
+ .eq('role', 'admin')
+ .single()
+
+ if (error || !adminProfile) {
+ throw new Error(
+ `Admin user with email ${adminEmail} not found. Please ensure the admin account exists and has the 'admin' role.`
+ )
+ }
+
+ return adminProfile.id
+}

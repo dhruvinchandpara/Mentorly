@@ -2,484 +2,326 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import {
- Users,
- Clock,
- CalendarCheck,
- TrendingUp,
- UserCheck,
- AlertCircle,
- Loader2,
- Mail,
- ShieldCheck,
- UserPlus,
-} from 'lucide-react'
-import { grantAdminRole } from './actions'
 import Link from 'next/link'
+import {
+  Users,
+  Clock,
+  CalendarCheck,
+  TrendingUp,
+  Mail,
+  Loader2,
+  Video,
+  ArrowRight,
+  Radio,
+  ArrowUpRight,
+} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 type Metrics = {
- totalMentors: number
- pendingApprovals: number
- totalBookings: number
- activeMentors: number
- authorizedStudents: number
+  totalMentors: number
+  pendingApprovals: number
+  totalBookings: number
+  activeMentors: number
+  authorizedStudents: number
 }
 
-type RecentMentor = {
- id: string
- full_name: string | null
- email: string | null
- is_active: boolean
- hourly_rate: number | null
+type SessionInfo = {
+  id: string
+  studentName: string
+  mentorName: string
+  startTime: string
+  endTime: string
+  duration: number
+  status: string
+  meetLink: string | null
 }
 
-type RecentSession = {
- id: string
- studentName: string
- mentorName: string
- startTime: string
- duration: number
- status: string
-}
+export default function AdminHome() {
+  const { supabase, loading: authLoading } = useAuth()
+  const [metrics, setMetrics] = useState<Metrics>({
+    totalMentors: 0,
+    pendingApprovals: 0,
+    totalBookings: 0,
+    activeMentors: 0,
+    authorizedStudents: 0,
+  })
+  const [ongoingSessions, setOngoingSessions] = useState<SessionInfo[]>([])
+  const [upcomingSessions, setUpcomingSessions] = useState<SessionInfo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false)
 
-export default function AdminDashboard() {
- const { supabase, loading: authLoading } = useAuth()
- const [metrics, setMetrics] = useState<Metrics>({
- totalMentors: 0,
- pendingApprovals: 0,
- totalBookings: 0,
- activeMentors: 0,
- authorizedStudents: 0,
- })
- const [recentMentors, setRecentMentors] = useState<RecentMentor[]>([])
- const [recentSessions, setRecentSessions] = useState<RecentSession[]>([])
- const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    if (!authLoading) {
+      fetchData()
+    }
+  }, [authLoading])
 
- const [adminEmail, setAdminEmail] = useState('')
- const [adminActionLoading, setAdminActionLoading] = useState(false)
- const [adminMessage, setAdminMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const fetchData = async () => {
+    try {
+      // Fetch metrics
+      const { count: totalMentors } = await supabase
+        .from('mentors')
+        .select('*', { count: 'exact', head: true })
 
- useEffect(() => {
- if (!authLoading) {
- fetchMetrics()
- }
- }, [authLoading])
+      const { count: pendingApprovals } = await supabase
+        .from('mentors')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', false)
 
- const fetchMetrics = async () => {
- try {
- // Fetch total mentors
- const { count: totalMentors } = await supabase
- .from('mentors')
- .select('*', { count: 'exact', head: true })
+      const { count: activeMentors } = await supabase
+        .from('mentors')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
 
- // Fetch pending approvals (mentors with is_active = false)
- const { count: pendingApprovals } = await supabase
- .from('mentors')
- .select('*', { count: 'exact', head: true })
- .eq('is_active', false)
+      const { count: totalBookings } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
 
- // Fetch active mentors
- const { count: activeMentors } = await supabase
- .from('mentors')
- .select('*', { count: 'exact', head: true })
- .eq('is_active', true)
+      const { count: authorizedStudents } = await supabase
+        .from('authorized_students')
+        .select('*', { count: 'exact', head: true })
 
- // Fetch total bookings
- const { count: totalBookings } = await supabase
- .from('bookings')
- .select('*', { count: 'exact', head: true })
+      setMetrics({
+        totalMentors: totalMentors || 0,
+        pendingApprovals: pendingApprovals || 0,
+        totalBookings: totalBookings || 0,
+        activeMentors: activeMentors || 0,
+        authorizedStudents: authorizedStudents || 0,
+      })
 
- // Fetch total authorized students
- const { count: authorizedStudents } = await supabase
- .from('authorized_students')
- .select('*', { count: 'exact', head: true })
+      // Fetch all scheduled sessions
+      const { data: sessionsList } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          start_time,
+          end_time,
+          duration_minutes,
+          status,
+          meet_link,
+          student_profiles:profiles!bookings_student_id_fkey(full_name),
+          mentor_profiles:mentors(profiles(full_name))
+        `)
+        .eq('status', 'scheduled')
+        .order('start_time', { ascending: true })
 
- // Fetch recent mentors with profile info
- const { data: mentorsList } = await supabase
- .from('mentors')
- .select(`
- id,
- is_active,
- hourly_rate,
- profiles!inner (
- full_name,
- email
- )
- `)
- .order('is_active', { ascending: true })
- .limit(5)
+      if (sessionsList && Array.isArray(sessionsList)) {
+        const now = new Date()
+        const ongoing: SessionInfo[] = []
+        const upcoming: SessionInfo[] = []
 
- setMetrics({
- totalMentors: totalMentors || 0,
- pendingApprovals: pendingApprovals || 0,
- totalBookings: totalBookings || 0,
- activeMentors: activeMentors || 0,
- authorizedStudents: authorizedStudents || 0,
- })
+        sessionsList.forEach((s) => {
+          const studentName = (s.student_profiles && typeof s.student_profiles === 'object' && 'full_name' in s.student_profiles)
+            ? String(s.student_profiles.full_name || 'Unknown')
+            : 'Unknown'
 
- if (mentorsList && Array.isArray(mentorsList)) {
- setRecentMentors(
- mentorsList.map((m) => ({
- id: m.id || '',
- full_name: (m.profiles && typeof m.profiles === 'object' && 'full_name' in m.profiles)
- ? (m.profiles.full_name as string | null)
- : null,
- email: (m.profiles && typeof m.profiles === 'object' && 'email' in m.profiles)
- ? (m.profiles.email as string | null)
- : null,
- is_active: Boolean(m.is_active),
- hourly_rate: typeof m.hourly_rate === 'number' ? m.hourly_rate : null,
- }))
- )
- }
+          const mentorName = (s.mentor_profiles && typeof s.mentor_profiles === 'object' && 'profiles' in s.mentor_profiles)
+            ? ((s.mentor_profiles.profiles && typeof s.mentor_profiles.profiles === 'object' && 'full_name' in s.mentor_profiles.profiles)
+              ? String(s.mentor_profiles.profiles.full_name || 'Unknown')
+              : 'Unknown')
+            : 'Unknown'
 
- // Fetch recent sessions
- const { data: sessionsList } = await supabase
- .from('bookings')
- .select(`
- id,
- start_time,
- duration_minutes,
- status,
- student_profiles:profiles!bookings_student_id_fkey(full_name),
- mentor_profiles:mentors(profiles(full_name))
- `)
- .order('start_time', { ascending: false })
- .limit(5)
+          const session: SessionInfo = {
+            id: s.id || '',
+            studentName,
+            mentorName,
+            startTime: s.start_time || new Date().toISOString(),
+            endTime: s.end_time || new Date().toISOString(),
+            duration: typeof s.duration_minutes === 'number' ? s.duration_minutes : 60,
+            status: s.status || 'scheduled',
+            meetLink: s.meet_link || null,
+          }
 
- if (sessionsList && Array.isArray(sessionsList)) {
- setRecentSessions(
- sessionsList.map((s) => {
- const studentName = (s.student_profiles && typeof s.student_profiles === 'object' && 'full_name' in s.student_profiles)
- ? String(s.student_profiles.full_name || 'Unknown')
- : 'Unknown'
+          const start = new Date(session.startTime)
+          const end = new Date(session.endTime)
 
- const mentorName = (s.mentor_profiles && typeof s.mentor_profiles === 'object' && 'profiles' in s.mentor_profiles)
- ? ((s.mentor_profiles.profiles && typeof s.mentor_profiles.profiles === 'object' && 'full_name' in s.mentor_profiles.profiles)
- ? String(s.mentor_profiles.profiles.full_name || 'Unknown')
- : 'Unknown')
- : 'Unknown'
+          if (now >= start && now <= end) {
+            ongoing.push(session)
+          } else if (start > now) {
+            upcoming.push(session)
+          }
+        })
 
- return {
- id: s.id || '',
- studentName,
- mentorName,
- startTime: s.start_time || new Date().toISOString(),
- duration: typeof s.duration_minutes === 'number' ? s.duration_minutes : 60,
- status: s.status || 'scheduled',
- }
- })
- )
- }
- } catch (error) {
- console.error('Error fetching metrics:', error)
- } finally {
- setLoading(false)
- }
- }
+        setOngoingSessions(ongoing)
+        setUpcomingSessions(upcoming)
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
- const handleGrantAdmin = async (e: React.FormEvent) => {
- e.preventDefault()
- if (!adminEmail.trim()) return
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
- setAdminActionLoading(true)
- setAdminMessage(null)
- try {
- const result = await grantAdminRole(adminEmail.trim().toLowerCase())
- if (result.success) {
- setAdminMessage({ type: 'success', text: result.message || 'Admin role granted!' })
- setAdminEmail('')
- } else {
- setAdminMessage({ type: 'error', text: result.error || 'Failed to grant admin role' })
- }
- } catch (error: any) {
- setAdminMessage({ type: 'error', text: error.message || 'An error occurred' })
- } finally {
- setAdminActionLoading(false)
- }
- }
+  const formatTime = (d: string) =>
+    new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 
- const metricCards = [
- {
- label: 'Total Mentors',
- value: metrics.totalMentors,
- icon: Users,
- color: 'bg-blue-500',
- bgLight: 'bg-blue-50 ',
- textColor: 'text-blue-600 ',
- },
- {
- label: 'Pending Approvals',
- value: metrics.pendingApprovals,
- icon: Clock,
- color: 'bg-amber-500',
- bgLight: 'bg-amber-50 ',
- textColor: 'text-amber-600 ',
- },
- {
- label: 'Total Bookings',
- value: metrics.totalBookings,
- icon: CalendarCheck,
- color: 'bg-emerald-500',
- bgLight: 'bg-emerald-50 ',
- textColor: 'text-emerald-600 ',
- },
- {
- label: 'Active Mentors',
- value: metrics.activeMentors,
- icon: TrendingUp,
- color: 'bg-violet-500',
- bgLight: 'bg-violet-50 ',
- textColor: 'text-violet-600 ',
- },
- {
- label: 'Authorized Students',
- value: metrics.authorizedStudents,
- icon: Mail,
- color: 'bg-blue-500',
- bgLight: 'bg-blue-50 ',
- textColor: 'text-blue-600 ',
- link: '/dashboard/admin/students'
- },
- ]
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
 
- if (loading) {
- return (
- <div className="flex items-center justify-center h-64">
- <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
- </div>
- )
- }
+  const metricCards = [
+    { label: 'Total Mentors', value: metrics.totalMentors, icon: Users, color: 'blue', change: null },
+    { label: 'Pending Approvals', value: metrics.pendingApprovals, icon: Clock, color: 'amber', change: null },
+    { label: 'Total Sessions', value: metrics.totalBookings, icon: CalendarCheck, color: 'emerald', change: null },
+    { label: 'Active Mentors', value: metrics.activeMentors, icon: TrendingUp, color: 'violet', change: '+12%' },
+    { label: 'Authorized Students', value: metrics.authorizedStudents, icon: Mail, color: 'slate', change: null },
+  ]
 
- return (
- <div>
- <div className="mb-8">
- <h1 className="text-3xl font-bold text-blue-950 tracking-tight">
- Dashboard Overview
- </h1>
- <p className="text-blue-600 mt-1">
- Monitor and manage your platform at a glance.
- </p>
- </div>
+  const displayedUpcoming = showAllUpcoming ? upcomingSessions : upcomingSessions.slice(0, 5)
 
- {/* Metric Cards */}
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
- {metricCards.map((card) => {
- const CardContent = (
- <div
- key={card.label}
- id={`metric-${card.label.toLowerCase().replace(/\s+/g, '-')}`}
- className="bg-white rounded-2xl border border-blue-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300 group h-full"
- >
- <div className="flex items-start justify-between mb-4">
- <div
- className={`w-12 h-12 rounded-xl ${card.bgLight} flex items-center justify-center`}
- >
- <card.icon
- className={`w-6 h-6 ${card.textColor}`}
- />
- </div>
- <div
- className={`w-2 h-2 rounded-full ${card.color} opacity-60 group-hover:opacity-100 transition-opacity`}
- />
- </div>
- <p className="text-sm font-medium text-blue-600 mb-1">
- {card.label}
- </p>
- <p className="text-3xl font-bold text-blue-950 tracking-tight">
- {card.value}
- </p>
- </div>
- )
+  return (
+    <div className="space-y-8">
+      {/* Page header */}
+      <div>
+        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight mb-2">Dashboard</h1>
+        <p className="text-slate-600">
+          Welcome back. Here&apos;s an overview of your platform.
+        </p>
+      </div>
 
- return card.link ? (
- <Link href={card.link} key={card.label}>
- {CardContent}
- </Link>
- ) : (
- <div key={card.label}>{CardContent}</div>
- )
- })}
- </div>
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {metricCards.map((card) => (
+          <div key={card.label} className="card-modern p-5 hover-lift">
+            <div className="flex items-start justify-between mb-3">
+              <div className={`w-10 h-10 rounded-lg ${
+                card.color === 'blue' ? 'bg-blue-50' :
+                card.color === 'amber' ? 'bg-amber-50' :
+                card.color === 'emerald' ? 'bg-emerald-50' :
+                card.color === 'violet' ? 'bg-violet-50' :
+                'bg-slate-100'
+              } flex items-center justify-center`}>
+                <card.icon className={`w-5 h-5 ${
+                  card.color === 'blue' ? 'text-blue-600' :
+                  card.color === 'amber' ? 'text-amber-600' :
+                  card.color === 'emerald' ? 'text-emerald-600' :
+                  card.color === 'violet' ? 'text-violet-600' :
+                  'text-slate-600'
+                }`} />
+              </div>
+              {card.change && (
+                <span className="text-xs font-medium text-emerald-600 flex items-center gap-0.5">
+                  <ArrowUpRight className="w-3 h-3" />
+                  {card.change}
+                </span>
+              )}
+            </div>
+            <p className="text-2xl font-semibold text-slate-900 mb-1">{card.value}</p>
+            <p className="text-sm text-slate-600">{card.label}</p>
+          </div>
+        ))}
+      </div>
 
- {/* Recent Mentors */}
- <div className="bg-white rounded-2xl border border-blue-200 shadow-sm">
- <div className="flex items-center justify-between px-6 py-5 border-b border-blue-200 ">
- <div>
- <h2 className="text-lg font-semibold text-blue-950 ">
- Recent Mentors
- </h2>
- <p className="text-sm text-blue-600 ">
- Latest mentor registrations
- </p>
- </div>
- <Link
- href="/dashboard/admin/mentors"
- id="view-all-mentors"
- className="text-sm font-medium text-blue-600 hover:text-blue-700 :text-blue-300 transition-colors"
- >
- View All →
- </Link>
- </div>
+      {/* Ongoing Sessions */}
+      {ongoingSessions.length > 0 && (
+        <Card className="border-red-200 bg-red-50/50">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <CardTitle className="text-base font-semibold text-slate-900">Live Sessions</CardTitle>
+              <Badge variant="destructive" className="ml-auto">
+                {ongoingSessions.length} active
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {ongoingSessions.map((session) => (
+                <div key={session.id} className="flex items-center justify-between p-4 bg-white border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                      <Video className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {session.studentName} <span className="font-normal text-slate-500">·</span> {session.mentorName}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {formatTime(session.startTime)} – {formatTime(session.endTime)} · {session.duration} min
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="destructive" className="animate-pulse">Live</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
- {recentMentors.length === 0 ? (
- <div className="flex flex-col items-center justify-center py-16 px-6">
- <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
- <AlertCircle className="w-8 h-8 text-slate-400 " />
- </div>
- <h3 className="text-lg font-semibold text-blue-950 mb-1">
- No mentors yet
- </h3>
- <p className="text-sm text-blue-600 text-center max-w-sm">
- When mentors sign up, they&apos;ll appear here for review and approval.
- </p>
- </div>
- ) : (
- <div className="divide-y divide-slate-100 ">
- {recentMentors.map((mentor) => (
- <div
- key={mentor.id}
- className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 :bg-slate-800/50 transition-colors"
- >
- <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-white font-semibold text-sm">
- {mentor.full_name?.charAt(0)?.toUpperCase() || '?'}
- </div>
- <div>
- <p className="text-sm font-medium text-blue-950 ">
- {mentor.full_name || 'Unnamed Mentor'}
- </p>
- <p className="text-xs text-blue-600 ">
- {mentor.email}
- </p>
- </div>
- </div>
- <div className="flex flex-col items-end gap-1">
- <span className="text-xs font-semibold text-blue-950 ">
- {mentor.hourly_rate ? `₹${mentor.hourly_rate}/hr` : '—'}
- </span>
- <span
- className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${mentor.is_active
- ? 'bg-emerald-50 text-emerald-700 '
- : 'bg-amber-50 text-amber-700 '
- }`}
- >
- {mentor.is_active ? (
- <>
- <UserCheck className="w-3 h-3" />
- Active
- </>
- ) : (
- <>
- <Clock className="w-3 h-3" />
- Pending
- </>
- )}
- </span>
- </div>
- </div>
- ))}
- </div>
- )}
- </div>
+      {/* Upcoming Sessions */}
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold text-slate-900">Upcoming Sessions</CardTitle>
+            <Badge variant="secondary" className="text-xs">
+              {upcomingSessions.length} scheduled
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {upcomingSessions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <CalendarCheck className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm text-slate-600">No upcoming sessions.</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {displayedUpcoming.map((session) => (
+                  <div key={session.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-600 flex items-center justify-center">
+                        <CalendarCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {session.studentName} <span className="font-normal text-slate-500">·</span> {session.mentorName}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {formatDate(session.startTime)} · {formatTime(session.startTime)} – {formatTime(session.endTime)} · {session.duration} min
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-slate-600 border-slate-300">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Scheduled
+                    </Badge>
+                  </div>
+                ))}
+              </div>
 
- {/* Recent Sessions */}
- <div className="bg-white rounded-2xl border border-blue-200 shadow-sm mt-8">
- <div className="px-6 py-5 border-b border-blue-200 ">
- <h2 className="text-lg font-semibold text-blue-950 ">Recent Sessions</h2>
- <p className="text-sm text-blue-600 ">Latest mentee-mentor meetings</p>
- </div>
- {recentSessions.length === 0 ? (
- <div className="py-12 text-center text-blue-600">No sessions recorded yet.</div>
- ) : (
- <div className="overflow-x-auto">
- <table className="w-full text-left">
- <thead className="bg-slate-50 text-xs font-semibold text-blue-600 uppercase tracking-wider">
- <tr>
- <th className="px-6 py-3">Student / Mentor</th>
- <th className="px-6 py-3">Scheduled Date</th>
- <th className="px-6 py-3">Duration</th>
- <th className="px-6 py-3">Status</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-slate-100 ">
- {recentSessions.map((session) => (
- <tr key={session.id} className="hover:bg-slate-50 :bg-slate-800/50 transition-colors">
- <td className="px-6 py-4">
- <div className="text-sm font-medium text-blue-950 ">{session.studentName}</div>
- <div className="text-xs text-blue-600">with {session.mentorName}</div>
- </td>
- <td className="px-6 py-4 text-sm text-blue-700 ">
- {new Date(session.startTime).toLocaleDateString()} at {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
- </td>
- <td className="px-6 py-4">
- <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold">
- <Clock className="w-3.5 h-3.5" />
- {session.duration} min
- </span>
- </td>
- <td className="px-6 py-4">
- <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${session.status === 'scheduled' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
- {session.status}
- </span>
- </td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- )}
- </div>
- {/* Management Section */}
- <div className="bg-white rounded-2xl border border-blue-200 shadow-sm mt-8 overflow-hidden">
- <div className="px-6 py-5 border-b border-blue-200 bg-slate-50/50 ">
- <div className="flex items-center gap-2">
- <ShieldCheck className="w-5 h-5 text-blue-600" />
- <h2 className="text-lg font-semibold text-blue-950 ">Admin Management</h2>
- </div>
- <p className="text-sm text-blue-600 ">Promote other users to help manage the platform</p>
- </div>
- <div className="p-6">
- <form onSubmit={handleGrantAdmin} className="flex flex-col sm:flex-row gap-4 max-w-2xl">
- <div className="relative flex-1">
- <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
- <input
- type="email"
- required
- placeholder="Enter user email address"
- value={adminEmail}
- onChange={(e) => setAdminEmail(e.target.value)}
- className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-blue-200 bg-white text-blue-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
- />
- </div>
- <button
- type="submit"
- disabled={adminActionLoading}
- className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 text-sm whitespace-nowrap"
- >
- {adminActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
- Grant Admin Access
- </button>
- </form>
+              {upcomingSessions.length > 5 && (
+                <button
+                  onClick={() => setShowAllUpcoming(!showAllUpcoming)}
+                  className="w-full mt-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                >
+                  {showAllUpcoming ? 'Show Less' : `Show All (${upcomingSessions.length})`}
+                </button>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
- {adminMessage && (
- <div className={`mt-4 p-4 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300 ${adminMessage.type === 'success'
- ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 '
- : 'bg-red-50 text-red-700 border border-red-200 '
- }`}>
- {adminMessage.type === 'success' ? <UserCheck className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
- {adminMessage.text}
- </div>
- )}
-
- <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-blue-200 ">
- <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Important Note</h4>
- <p className="text-xs text-blue-700 leading-relaxed">
- Promoting a user to Admin gives them full access to all data, including the ability to approve mentors, manage bookings, and authorize students. **Ensure you trust the user before granting this access.** The user must have already signed up for an account.
- </p>
- </div>
- </div>
- </div>
- </div>
- )
+      {/* View All Sessions CTA */}
+      <Link
+        href="/dashboard/admin/sessions"
+        className="btn-secondary w-full justify-center"
+      >
+        View All Sessions
+        <ArrowRight className="w-4 h-4" />
+      </Link>
+    </div>
+  )
 }

@@ -16,8 +16,19 @@ npm run dev              # Start dev server at http://localhost:3000
 npm run build            # Create production build
 npm start                # Run production server
 
-# Linting
+# Linting & Formatting
 npm run lint             # Run ESLint
+npm run format           # Format code with Prettier
+npm run format:check     # Check formatting without changes
+
+# Testing
+npm run test             # Run Vitest tests
+npm run test:ui          # Run tests with UI
+npm run test:coverage    # Generate test coverage report
+
+# Storybook (Component Development)
+npm run storybook        # Start Storybook on port 6006
+npm run build-storybook  # Build static Storybook
 ```
 
 ## Architecture Overview
@@ -45,6 +56,9 @@ npm run lint             # Run ESLint
 - `availability` - Mentor schedules (weekly recurring + date-specific slots)
 - `bookings` - Session reservations with status tracking and Google Meet links
 
+**Additional Tables:**
+- `authorized_students` - Whitelist of approved student emails (admin-managed)
+
 **Key Relationships:**
 - `mentors.id` → `profiles.id` (one-to-one)
 - `bookings.mentor_id` → `mentors.id`
@@ -56,6 +70,18 @@ npm run lint             # Run ESLint
 - Mentors: public read, mentors can update their own
 - Bookings: users see bookings where they are student OR mentor
 - Availability: mentors manage their own schedules, students can view for booking UI
+- Authorized Students: admins only (full CRUD)
+
+**Slot-Based Bookings:**
+- Bookings use 15-minute time slots (configurable via `slot_count` column)
+- `slot_count = 1` means 15 minutes, `slot_count = 2` means 30 minutes, etc.
+- Duration must be in 15-minute increments (`duration_minutes % 15 = 0`)
+- Index on `(mentor_id, start_time, end_time)` for fast overlap detection
+
+**Student Authorization:**
+- New students must have their email pre-approved in `authorized_students` table
+- Enforced via database trigger `handle_new_user()` on signup
+- Prevents unauthorized student registrations
 
 **Schema Migrations:**
 All SQL files are in `/supabase/` directory. Apply migrations manually in Supabase dashboard or via CLI.
@@ -107,20 +133,57 @@ All SQL files are in `/supabase/` directory. Apply migrations manually in Supaba
 /mentor/[id]               - Mentor profile + booking (public)
 /dashboard                 - Role-based redirect
   /student                 - Student bookings view
-  /mentor                  - Mentor dashboard (availability, bookings, earnings)
-  /admin                   - Admin panel (mentor approval)
-    /mentors               - Mentor management
+  /mentor                  - Mentor dashboard with collapsible sidebar
+    /                      - Dashboard home (sessions overview)
+    /availability          - Manage availability
+    /sessions              - View all sessions
+    /payments              - Payment history
+    /profile               - Edit mentor profile
+    /settings              - Account settings
+  /admin                   - Admin panel with collapsible sidebar
+    /                      - Admin dashboard home (stats)
+    /sessions              - View all platform sessions
+    /mentors               - Mentor management (approval)
+    /students              - Student management
+    /profile               - Admin profile settings
+    /manage-admins         - Manage admin users
 ```
 
-Dashboards are role-protected via client-side checks in page components using `useAuth()` and `router.replace()`.
+**Dashboard Layouts:**
+- Both mentor and admin dashboards use dedicated layout components with collapsible sidebars
+- Mentor layout: [src/app/dashboard/mentor/layout.tsx](src/app/dashboard/mentor/layout.tsx) (blue theme)
+- Admin layout: [src/app/dashboard/admin/layout.tsx](src/app/dashboard/admin/layout.tsx) (indigo/purple gradient theme)
+- Role protection enforced via `useEffect` checking `profile.role` and redirecting unauthorized users
+- Layouts include navigation, breadcrumbs, and profile dropdown menus
 
-### Styling
+### Styling & Design System
 
+**Framework & Tools:**
 - TailwindCSS 4 with PostCSS
-- Dark mode support via `dark:` variants (system preference)
-- Custom color scheme: Indigo/Purple gradients for primary branding
 - Lucide React for icons
 - Custom fonts: Geist Sans and Geist Mono
+- Shadcn UI components (customized)
+- Base UI for headless components
+
+**Design System:**
+- Centralized design tokens in [src/lib/design-system.ts](src/lib/design-system.ts)
+- Professional color palette: Primary Blue (trustworthy), Success Emerald, Warning Amber, Danger Red, Accent Purple
+- Typography scale with precise line heights and letter spacing
+- Consistent spacing (4px base unit), border radius, and shadow system
+- Animation timings and easing curves defined
+- Component patterns for buttons, cards, badges, and inputs
+
+**Component Library:**
+- Custom UI components in [src/components/ui/](src/components/ui/)
+- Includes: buttons, cards, badges, tables, dropdowns, avatars, dialogs, tabs, etc.
+- Special components: `stat-card.tsx`, `status-badge.tsx`, `animated-section.tsx`
+- All components use design tokens for consistency
+
+**Storybook Integration:**
+- Component stories in [src/stories/](src/stories/)
+- Run `npm run storybook` to view component library
+- Includes accessibility testing via @storybook/addon-a11y
+- Configured for Vite and Next.js integration
 
 ### Environment Variables
 
@@ -178,3 +241,40 @@ ADMIN_EMAIL=                   # Added to all calendar invites
 - Import `createAdminClient()` for operations requiring service role
 - Return serializable objects only (no Date objects, use ISO strings)
 - Handle errors gracefully and return error messages to client
+
+### Testing & Quality Assurance
+
+**Testing Stack:**
+- Vitest for unit and integration tests
+- Playwright for browser testing (via @vitest/browser-playwright)
+- Coverage reporting with @vitest/coverage-v8
+- Storybook Vitest addon for component testing
+
+**Linting & Formatting:**
+- ESLint with Next.js config and TypeScript support
+- Prettier with Tailwind CSS plugin and import sorting
+- React Hooks and JSX accessibility linting enabled
+
+**Running Tests:**
+```bash
+npm run test            # Run all tests
+npm run test:ui         # Interactive test UI
+npm run test:coverage   # Generate coverage report
+```
+
+### Development Tools & Dependencies
+
+**Key Development Tools:**
+- TypeScript 5 with strict mode
+- Total TypeScript ts-reset for better type safety
+- Type Fest for advanced TypeScript utilities
+- React Query (TanStack) for server state management (devDependencies)
+- Vite 8 for fast builds and HMR
+
+**Notable Production Dependencies:**
+- Next.js 16.1.6 with App Router
+- React 19.2.3
+- Supabase JS client + SSR helpers
+- Google APIs for Calendar integration
+- Class Variance Authority for component variants
+- Tailwind Merge for class name merging

@@ -1,196 +1,228 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { useAuth } from '@/context/AuthContext'
-import Link from 'next/link'
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 import {
- LayoutDashboard,
- Users,
- LogOut,
- ChevronLeft,
- ChevronRight,
- Shield,
- Loader2,
-} from 'lucide-react'
+  LayoutDashboard,
+  CalendarDays,
+  Users,
+  GraduationCap,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  Loader2,
+  UserCog,
+  Settings,
+  Sparkles,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const navItems = [
- {
- label: 'Dashboard',
- href: '/dashboard/admin',
- icon: LayoutDashboard,
- },
- {
- label: 'Manage Mentors',
- href: '/dashboard/admin/mentors',
- icon: Users,
- },
-]
+  {
+    label: 'Home',
+    href: '/dashboard/admin',
+    icon: LayoutDashboard,
+  },
+  {
+    label: 'Sessions',
+    href: '/dashboard/admin/sessions',
+    icon: CalendarDays,
+  },
+  {
+    label: 'Mentors',
+    href: '/dashboard/admin/mentors',
+    icon: Users,
+  },
+  {
+    label: 'Students',
+    href: '/dashboard/admin/students',
+    icon: GraduationCap,
+  },
+];
 
-export default function AdminLayout({
- children,
-}: {
- children: React.ReactNode
-}) {
- const { user, profile, loading, signOut } = useAuth()
- const router = useRouter()
- const pathname = usePathname()
- const [collapsed, setCollapsed] = useState(false)
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { user, profile, loading, signOut } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
 
- useEffect(() => {
- if (!loading) {
- if (!user) {
- router.push('/login')
- } else if (profile && profile.role !== 'admin') {
- router.push('/dashboard')
- }
- }
- }, [user, profile, loading, router])
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (profile && profile.role !== 'admin') {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, profile, loading, router]);
 
- if (loading || !profile || profile.role !== 'admin') {
- return (
- <div className="min-h-screen flex items-center justify-center bg-slate-50 ">
- <div className="text-center">
- <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
- <h2 className="text-xl font-semibold text-blue-950 ">
- Verifying admin access...
- </h2>
- </div>
- </div>
- )
- }
+  if (loading || !profile || profile.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-slate-900">Verifying admin access...</h2>
+        </div>
+      </div>
+    );
+  }
 
- return (
- <div className="min-h-screen bg-slate-50 flex">
- {/* Sidebar */}
- <aside
- className={`${collapsed ? 'w-20' : 'w-72'
- } transition-all duration-300 ease-in-out bg-blue-600 border-r border-blue-700 flex flex-col fixed h-full z-20`}
- >
- {/* Brand */}
- <div className="h-16 flex items-center justify-between px-4 border-b border-blue-700 ">
- {!collapsed && (
- <div className="flex items-center gap-2">
- <div className="w-8 h-8 rounded-lg bg-white text-blue-600 flex items-center justify-center">
- <Shield className="w-4 h-4 text-blue-600" />
- </div>
- <span className="text-lg font-bold text-white">
- Admin Panel
- </span>
- </div>
- )}
- {collapsed && (
- <div className="w-8 h-8 rounded-lg bg-white text-blue-600 flex items-center justify-center mx-auto">
- <Shield className="w-4 h-4 text-blue-600" />
- </div>
- )}
- <button
- onClick={() => setCollapsed(!collapsed)}
- className={`p-1.5 rounded-lg hover:bg-blue-700 text-blue-100 transition-colors ${collapsed ? 'hidden' : ''}`}
- id="toggle-sidebar"
- >
- <ChevronLeft className="w-4 h-4" />
- </button>
- </div>
+  const initials =
+    profile?.full_name
+      ?.split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'AD';
 
- {/* Navigation */}
- <nav className="flex-1 p-3 space-y-1">
- {collapsed && (
- <button
- onClick={() => setCollapsed(false)}
- className="w-full flex items-center justify-center p-2.5 rounded-lg hover:bg-blue-700 text-blue-100 transition-colors mb-2"
- id="expand-sidebar"
- >
- <ChevronRight className="w-5 h-5" />
- </button>
- )}
- {navItems.map((item) => {
- const isActive = pathname === item.href
- return (
- <Link
- key={item.href}
- href={item.href}
- id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
- className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive
- ? 'bg-blue-700 text-white shadow-sm'
- : 'text-blue-100 hover:bg-blue-700 hover:text-white'
- }`}
- >
- <item.icon
- className={`w-5 h-5 flex-shrink-0 ${isActive
- ? 'text-white '
- : 'text-blue-200 group-hover:text-white'
- }`}
- />
- {!collapsed && (
- <span className="text-sm font-medium">
- {item.label}
- </span>
- )}
- </Link>
- )
- })}
- </nav>
+  return (
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Sidebar */}
+      <aside
+        className={`${
+          collapsed ? 'w-20' : 'w-64'
+        } transition-all duration-300 ease-in-out bg-white border-r border-slate-200 flex flex-col fixed h-full z-20`}
+      >
+        {/* Brand */}
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200">
+          {!collapsed && (
+            <Link href="/dashboard/admin" className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-base font-semibold text-slate-900 tracking-tight">Mentorly Admin</span>
+            </Link>
+          )}
+          {collapsed && (
+            <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center mx-auto">
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+          )}
+          {!collapsed && (
+            <button
+              onClick={() => setCollapsed(true)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+        </div>
 
- {/* User section */}
- <div className="p-3 border-t border-blue-700 ">
- {!collapsed && (
- <div className="flex items-center gap-3 px-3 py-2 mb-2">
- <div className="w-9 h-9 rounded-full bg-blue-700 text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
- {profile?.full_name?.charAt(0)?.toUpperCase() || 'A'}
- </div>
- <div className="overflow-hidden">
- <p className="text-sm font-medium text-white truncate">
- {profile?.full_name || 'Admin'}
- </p>
- <p className="text-xs text-blue-200 truncate">
- {profile?.email}
- </p>
- </div>
- </div>
- )}
- <button
- onClick={signOut}
- id="admin-sign-out"
- className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-blue-200 hover:bg-blue-700 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''
- }`}
- >
- <LogOut className="w-5 h-5 flex-shrink-0" />
- {!collapsed && (
- <span className="text-sm font-medium">Sign Out</span>
- )}
- </button>
- </div>
- </aside>
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
+          {collapsed && (
+            <button
+              onClick={() => setCollapsed(false)}
+              className="w-full flex items-center justify-center p-3 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors mb-2"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+          {navItems.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/dashboard/admin' && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                {!collapsed && <span className="text-sm">{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
 
- {/* Main content */}
- <main
- className={`flex-1 transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-72'
- }`}
- >
- {/* Top bar */}
- <header className="h-16 bg-white/80 backdrop-blur-sm border-b border-blue-200 flex items-center px-8 sticky top-0 z-10">
- <div className="flex items-center gap-2 text-sm text-blue-600 ">
- <Link
- href="/dashboard/admin"
- className="hover:text-blue-600 :text-blue-400 transition-colors"
- >
- Admin
- </Link>
- {pathname !== '/dashboard/admin' && (
- <>
- <span>/</span>
- <span className="text-blue-950 font-medium">
- {pathname.split('/').pop()?.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
- </span>
- </>
- )}
- </div>
- </header>
+        {/* Bottom section */}
+        <div className="p-3 border-t border-slate-200">
+          {!collapsed ? (
+            <div className="px-3 py-2">
+              <p className="text-xs text-slate-500">Admin Panel v1.0</p>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            </div>
+          )}
+        </div>
+      </aside>
 
- {/* Page content */}
- <div className="p-8">{children}</div>
- </main>
- </div>
- )
+      {/* Main content */}
+      <main className={`flex-1 transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-64'}`}>
+        {/* Top bar */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm">
+            <Link
+              href="/dashboard/admin"
+              className="text-slate-600 hover:text-slate-900 transition-colors font-medium"
+            >
+              Admin
+            </Link>
+            {pathname !== '/dashboard/admin' && (
+              <>
+                <span className="text-slate-300">/</span>
+                <span className="text-slate-900 font-medium">
+                  {pathname
+                    .split('/')
+                    .pop()
+                    ?.replace(/-/g, ' ')
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Profile dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-3 hover:bg-slate-50 rounded-lg px-3 py-2 transition-colors">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-slate-900">{profile?.full_name || 'Admin'}</p>
+                <p className="text-xs text-slate-500">{profile?.email}</p>
+              </div>
+              <Avatar className="h-9 w-9 border-2 border-blue-100">
+                <AvatarFallback className="gradient-primary text-white text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => router.push('/dashboard/admin/profile')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Edit Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/admin/manage-admins')}>
+                <UserCog className="mr-2 h-4 w-4" />
+                Manage Admins
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={signOut} className="text-red-600 focus:text-red-600">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+
+        {/* Page content */}
+        <div className="p-6 lg:p-8">{children}</div>
+      </main>
+    </div>
+  );
 }
