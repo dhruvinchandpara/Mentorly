@@ -4,12 +4,14 @@ import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
 import {
   CheckCircle2, Clock, Calendar, Video, Radio,
-  Loader2, Search, AlertCircle, ExternalLink, BookOpen, User, X
+  Loader2, Search, AlertCircle, ExternalLink, BookOpen, User, X, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+
+const ITEMS_PER_PAGE = 10
 
 interface Booking {
   id: string
@@ -44,6 +46,7 @@ export default function SessionsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('upcoming')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStudent, setSelectedStudent] = useState<Booking | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Tick to refresh session states
   const [, setTick] = useState(0)
@@ -172,6 +175,28 @@ export default function SessionsPage() {
   const filteredUpcoming = filterBySearch(upcomingBookings)
   const filteredPending = filterBySearch(pendingApprovals)
   const filteredHistory = filterBySearch(historyBookings)
+
+  // Reset to page 1 when changing tabs or search
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab, searchQuery])
+
+  // Pagination logic
+  const getCurrentPageData = (data: Booking[]) => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    const endIndex = startIndex + ITEMS_PER_PAGE
+    return data.slice(startIndex, endIndex)
+  }
+
+  const getTotalPages = (data: Booking[]) => Math.ceil(data.length / ITEMS_PER_PAGE)
+
+  const paginatedUpcoming = getCurrentPageData(filteredUpcoming)
+  const paginatedPending = getCurrentPageData(filteredPending)
+  const paginatedHistory = getCurrentPageData(filteredHistory)
+
+  const upcomingTotalPages = getTotalPages(filteredUpcoming)
+  const pendingTotalPages = getTotalPages(filteredPending)
+  const historyTotalPages = getTotalPages(filteredHistory)
 
   if (loading) {
     return (
@@ -389,68 +414,112 @@ export default function SessionsPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {filteredUpcoming.map(session => {
-                  const studentName = session.profiles?.full_name || 'Unknown Student'
-                  const state = getSessionState(session.start_time, session.end_time)
-                  const isReady = state === 'ready'
+              <>
+                <div className="space-y-3">
+                  {paginatedUpcoming.map(session => {
+                    const studentName = session.profiles?.full_name || 'Unknown Student'
+                    const state = getSessionState(session.start_time, session.end_time)
+                    const isReady = state === 'ready'
 
-                  return (
-                    <div key={session.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setSelectedStudent(session)}
-                            className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm hover:bg-blue-200 transition-colors cursor-pointer"
-                          >
-                            {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                          </button>
-                          <div>
+                    return (
+                      <div key={session.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div className="flex items-center gap-3">
                             <button
                               onClick={() => setSelectedStudent(session)}
-                              className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                              className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm hover:bg-blue-200 transition-colors cursor-pointer"
                             >
-                              {studentName}
+                              {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </button>
-                            <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
-                              <Calendar className="w-3 h-3" />
-                              {formatDate(session.start_time)}
-                            </p>
-                            <p className="text-xs text-slate-600 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
-                            </p>
+                            <div>
+                              <button
+                                onClick={() => setSelectedStudent(session)}
+                                className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                              >
+                                {studentName}
+                              </button>
+                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(session.start_time)}
+                              </p>
+                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isReady && session.meet_link && (
+                              <a
+                                href={session.meet_link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                              >
+                                <Video className="w-4 h-4 inline mr-1" />
+                                Join Call
+                              </a>
+                            )}
+                            {!isReady && session.meet_link && (
+                              <a
+                                href={session.meet_link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 border border-slate-300 text-slate-600 hover:border-slate-400 rounded-lg text-xs font-medium flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                Meet Link
+                              </a>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isReady && session.meet_link && (
-                            <a
-                              href={session.meet_link}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold shadow-sm"
-                            >
-                              <Video className="w-4 h-4 inline mr-1" />
-                              Join Call
-                            </a>
-                          )}
-                          {!isReady && session.meet_link && (
-                            <a
-                              href={session.meet_link}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 border border-slate-300 text-slate-600 hover:border-slate-400 rounded-lg text-xs font-medium flex items-center gap-1"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              Meet Link
-                            </a>
-                          )}
-                        </div>
                       </div>
+                    )
+                  })}
+                </div>
+
+                {/* Pagination */}
+                {upcomingTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
+                    <p className="text-sm text-slate-600">
+                      Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredUpcoming.length)} of {filteredUpcoming.length} sessions
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: upcomingTotalPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(upcomingTotalPages, p + 1))}
+                        disabled={currentPage === upcomingTotalPages}
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
-                  )
-                })}
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -470,58 +539,102 @@ export default function SessionsPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {filteredPending.map(session => {
-                  const studentName = session.profiles?.full_name || 'Unknown Student'
-                  return (
-                    <div key={session.id} className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setSelectedStudent(session)}
-                            className="w-10 h-10 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm hover:bg-orange-200 transition-colors cursor-pointer"
-                          >
-                            {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                          </button>
-                          <div>
+              <>
+                <div className="space-y-3">
+                  {paginatedPending.map(session => {
+                    const studentName = session.profiles?.full_name || 'Unknown Student'
+                    return (
+                      <div key={session.id} className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div className="flex items-center gap-3">
                             <button
                               onClick={() => setSelectedStudent(session)}
-                              className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                              className="w-10 h-10 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm hover:bg-orange-200 transition-colors cursor-pointer"
                             >
-                              {studentName}
+                              {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </button>
-                            <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
-                              <Calendar className="w-3 h-3" />
-                              {formatDate(session.start_time)}
-                            </p>
-                            <p className="text-xs text-slate-600 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
-                            </p>
+                            <div>
+                              <button
+                                onClick={() => setSelectedStudent(session)}
+                                className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                              >
+                                {studentName}
+                              </button>
+                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(session.start_time)}
+                              </p>
+                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
+                              </p>
+                            </div>
                           </div>
+                          <Button
+                            onClick={() => markCompleted(session.id)}
+                            disabled={markingComplete === session.id}
+                            size="sm"
+                          >
+                            {markingComplete === session.id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                Marking...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Mark as Complete
+                              </>
+                            )}
+                          </Button>
                         </div>
-                        <Button
-                          onClick={() => markCompleted(session.id)}
-                          disabled={markingComplete === session.id}
-                          size="sm"
-                        >
-                          {markingComplete === session.id ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                              Marking...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="w-4 h-4 mr-2" />
-                              Mark as Complete
-                            </>
-                          )}
-                        </Button>
                       </div>
+                    )
+                  })}
+                </div>
+
+                {/* Pagination */}
+                {pendingTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
+                    <p className="text-sm text-slate-600">
+                      Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredPending.length)} of {filteredPending.length} sessions
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: pendingTotalPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(pendingTotalPages, p + 1))}
+                        disabled={currentPage === pendingTotalPages}
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
-                  )
-                })}
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -541,52 +654,96 @@ export default function SessionsPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {filteredHistory.map(session => {
-                  const studentName = session.profiles?.full_name || 'Unknown Student'
-                  const isCompleted = session.status === 'completed'
-                  return (
-                    <div key={session.id} className="p-4 bg-white border border-slate-200 rounded-lg">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setSelectedStudent(session)}
-                            className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm hover:bg-slate-200 transition-colors cursor-pointer"
-                          >
-                            {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                          </button>
-                          <div>
+              <>
+                <div className="space-y-3">
+                  {paginatedHistory.map(session => {
+                    const studentName = session.profiles?.full_name || 'Unknown Student'
+                    const isCompleted = session.status === 'completed'
+                    return (
+                      <div key={session.id} className="p-4 bg-white border border-slate-200 rounded-lg">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div className="flex items-center gap-3">
                             <button
                               onClick={() => setSelectedStudent(session)}
-                              className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                              className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm hover:bg-slate-200 transition-colors cursor-pointer"
                             >
-                              {studentName}
+                              {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </button>
-                            <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
-                              <Calendar className="w-3 h-3" />
-                              {formatDate(session.start_time)}
-                            </p>
-                            <p className="text-xs text-slate-600 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
-                            </p>
+                            <div>
+                              <button
+                                onClick={() => setSelectedStudent(session)}
+                                className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                              >
+                                {studentName}
+                              </button>
+                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(session.start_time)}
+                              </p>
+                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
+                              </p>
+                            </div>
                           </div>
+                          <Badge variant={isCompleted ? 'default' : 'destructive'} className={isCompleted ? 'bg-emerald-100 text-emerald-700' : ''}>
+                            {isCompleted ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Completed
+                              </>
+                            ) : (
+                              'Cancelled'
+                            )}
+                          </Badge>
                         </div>
-                        <Badge variant={isCompleted ? 'default' : 'destructive'} className={isCompleted ? 'bg-emerald-100 text-emerald-700' : ''}>
-                          {isCompleted ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Completed
-                            </>
-                          ) : (
-                            'Cancelled'
-                          )}
-                        </Badge>
                       </div>
+                    )
+                  })}
+                </div>
+
+                {/* Pagination */}
+                {historyTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
+                    <p className="text-sm text-slate-600">
+                      Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredHistory.length)} of {filteredHistory.length} sessions
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: historyTotalPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(historyTotalPages, p + 1))}
+                        disabled={currentPage === historyTotalPages}
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
-                  )
-                })}
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

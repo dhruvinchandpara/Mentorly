@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/context/AuthContext'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   CheckCircle2, Clock, Calendar, Video, Radio,
@@ -9,16 +9,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-interface Booking {
-  id: string
-  student_id: string
-  start_time: string
-  end_time: string
-  duration_minutes: number
-  status: 'scheduled' | 'completed' | 'cancelled'
-  meet_link: string | null
-  profiles: { full_name: string }
-}
+import { useMentorBookings } from '@/hooks/useMentorBookings'
 
 function getSessionState(startTime: string, endTime: string) {
   const now = Date.now()
@@ -32,10 +23,9 @@ function getSessionState(startTime: string, endTime: string) {
 }
 
 export default function MentorDashboard() {
-  const { profile, supabase } = useAuth()
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
-  const [markingComplete, setMarkingComplete] = useState<string | null>(null)
+  const { profile } = useAuth()
+  const { data: bookings = [], isLoading: loading, markComplete, isMarkingComplete } = useMentorBookings()
+  const [markingCompleteId, setMarkingCompleteId] = useState<string | null>(null)
   const [, setTick] = useState(0)
 
   // Tick to refresh session states
@@ -44,45 +34,16 @@ export default function MentorDashboard() {
     return () => clearInterval(id)
   }, [])
 
-  const fetchBookings = useCallback(async () => {
-    if (!profile?.id) return
-    setLoading(true)
-    try {
-      const { data: bookingData } = await supabase
-        .from('bookings')
-        .select(`
-          id, student_id, start_time, end_time, duration_minutes, status, meet_link,
-          profiles!bookings_student_id_fkey(full_name)
-        `)
-        .eq('mentor_id', profile.id)
-        .order('start_time', { ascending: true })
-
-      setBookings(bookingData || [])
-    } catch (err: any) {
-      console.error('Error fetching bookings:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [supabase, profile])
-
-  useEffect(() => {
-    fetchBookings()
-  }, [fetchBookings])
-
   const markCompleted = async (bookingId: string) => {
-    setMarkingComplete(bookingId)
+    setMarkingCompleteId(bookingId)
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'completed' })
-        .eq('id', bookingId)
-      if (error) throw error
-      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'completed' } : b))
+      markComplete(bookingId)
     } catch (err: any) {
       console.error('Error marking completed:', err)
       alert(`Failed to update booking status: ${err.message || 'Unknown error'}`)
     } finally {
-      setMarkingComplete(null)
+      // Reset after a delay to allow the mutation to complete
+      setTimeout(() => setMarkingCompleteId(null), 1000)
     }
   }
 
@@ -322,10 +283,10 @@ export default function MentorDashboard() {
                     </div>
                     <button
                       onClick={() => markCompleted(booking.id)}
-                      disabled={markingComplete === booking.id}
+                      disabled={markingCompleteId === booking.id}
                       className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
                     >
-                      {markingComplete === booking.id ? (
+                      {markingCompleteId === booking.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <CheckCircle2 className="w-4 h-4" />

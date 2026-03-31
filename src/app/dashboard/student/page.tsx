@@ -1,29 +1,14 @@
 'use client'
 
 import { useAuth } from '@/context/AuthContext'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Clock, Video, Radio, ArrowRight, Calendar, Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-
-interface Booking {
-  id: string
-  mentor_id: string
-  student_id: string
-  start_time: string
-  end_time: string
-  duration_minutes: number
-  slot_count: number
-  status: 'scheduled' | 'completed' | 'cancelled'
-  meet_link: string | null
-  mentors: {
-    profiles: { full_name: string }
-    expertise: string[]
-  }
-}
+import { useBookings } from '@/hooks/useBookings'
 
 /** Returns the call button state for a given booking */
 function getCallState(startTime: string, endTime: string) {
@@ -39,53 +24,27 @@ function getCallState(startTime: string, endTime: string) {
 }
 
 export default function StudentHome() {
-  const { profile, supabase, user } = useAuth()
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
+  const { profile } = useAuth()
+  const { data: bookings = [], isLoading: loading } = useBookings('scheduled')
   const [, setTick] = useState(0)
-
-  const fetchBookings = useCallback(async () => {
-    if (!user?.id) return
-
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          id, mentor_id, student_id, start_time, end_time, duration_minutes, slot_count, status, meet_link,
-          mentors!inner(profiles!inner(full_name), expertise)
-        `)
-        .eq('student_id', user.id)
-        .eq('status', 'scheduled')
-        .order('start_time', { ascending: true })
-
-      if (!error) setBookings(data || [])
-    } catch (err) {
-      console.error('Error fetching bookings:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [supabase, user?.id])
-
-  useEffect(() => {
-    if (user?.id) {
-      fetchBookings()
-    }
-  }, [user?.id, fetchBookings])
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 30_000)
     return () => clearInterval(id)
   }, [])
 
-  // Categorize bookings
+  // Categorize bookings - sort by start_time ascending for scheduled bookings
+  const sortedBookings = [...bookings].sort((a, b) =>
+    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  )
+
   const now = new Date()
-  const ongoingSessions = bookings.filter(b => {
+  const ongoingSessions = sortedBookings.filter(b => {
     const state = getCallState(b.start_time, b.end_time)
     return state === 'live'
   })
 
-  const upcomingSessions = bookings.filter(b => {
+  const upcomingSessions = sortedBookings.filter(b => {
     const state = getCallState(b.start_time, b.end_time)
     return state !== 'live' && new Date(b.start_time) > now
   }).slice(0, 3)

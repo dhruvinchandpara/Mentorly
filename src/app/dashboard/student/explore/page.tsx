@@ -1,65 +1,17 @@
 'use client'
 
-import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, ArrowRight, X, Loader2 } from 'lucide-react'
-
-interface MentorCard {
-  id: string
-  bio: string
-  expertise: string[]
-  hourly_rate: number
-  is_active: boolean
-  profiles: {
-    full_name: string
-    email: string
-  }
-}
+import { useMentors } from '@/hooks/useMentors'
 
 const ITEMS_PER_PAGE = 9
 
 export default function ExploreMentors() {
-  const { supabase } = useAuth()
-  const [mentors, setMentors] = useState<MentorCard[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: mentors = [], isLoading: loading } = useMentors(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedExpertise, setSelectedExpertise] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-
-  useEffect(() => {
-    fetchMentors()
-  }, [])
-
-  const fetchMentors = async () => {
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('mentors')
-        .select(`
-          id,
-          bio,
-          expertise,
-          hourly_rate,
-          is_active,
-          profiles!inner (
-            full_name,
-            email
-          )
-        `)
-        .eq('is_active', true)
-
-      if (error) {
-        console.error('Error fetching mentors:', error)
-      } else {
-        setMentors(data || [])
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // Collect all unique expertise tags
   const allExpertiseTags = useMemo(() => {

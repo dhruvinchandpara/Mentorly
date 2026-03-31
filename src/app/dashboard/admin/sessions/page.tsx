@@ -10,6 +10,8 @@ import {
   Radio,
   CheckCircle2,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -22,6 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+
+const ITEMS_PER_PAGE = 10;
 
 type SessionInfo = {
   id: string;
@@ -40,10 +44,15 @@ export default function AdminSessions() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!authLoading) fetchSessions();
   }, [authLoading]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   const fetchSessions = async () => {
     try {
@@ -142,6 +151,21 @@ export default function AdminSessions() {
       getSessionState(s) === 'completed' ||
       (getSessionState(s) !== 'live' && getSessionState(s) !== 'upcoming')
   );
+
+  // Pagination logic
+  const getCurrentPageData = (data: SessionInfo[]) => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (data: SessionInfo[]) => Math.ceil(data.length / ITEMS_PER_PAGE);
+
+  const paginatedUpcoming = getCurrentPageData(upcomingSessions);
+  const paginatedPast = getCurrentPageData(pastSessions);
+
+  const upcomingTotalPages = getTotalPages(upcomingSessions);
+  const pastTotalPages = getTotalPages(pastSessions);
 
   if (loading) {
     return (
@@ -268,7 +292,7 @@ export default function AdminSessions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {upcomingSessions.map((session) => (
+                {paginatedUpcoming.map((session) => (
                   <TableRow key={session.id} className="hover:bg-[#fafbfc] border-b border-slate-100/60">
                     <TableCell>
                       <p className="text-sm font-semibold text-[#1e293b]">{session.studentName}</p>
@@ -300,6 +324,48 @@ export default function AdminSessions() {
                 ))}
               </TableBody>
             </Table>
+
+            {/* Pagination */}
+            {upcomingTotalPages > 1 && (
+              <div className="flex items-center justify-between p-6 border-t border-slate-100/80">
+                <p className="text-sm text-[#64748b]">
+                  Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, upcomingSessions.length)} of {upcomingSessions.length} sessions
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: upcomingTotalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-10 h-10 text-sm font-medium rounded-[14px] transition-colors ${
+                          currentPage === page
+                            ? 'gradient-primary text-white'
+                            : 'text-[#475569] hover:bg-[#fafbfc]'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(upcomingTotalPages, p + 1))}
+                    disabled={currentPage === upcomingTotalPages}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -321,54 +387,98 @@ export default function AdminSessions() {
               <p className="text-[#64748b]">No past sessions found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#fafbfc] hover:bg-[#fafbfc] border-b border-slate-100/80">
-                  <TableHead className="text-[#64748b] font-semibold text-sm">Student / Mentor</TableHead>
-                  <TableHead className="text-[#64748b] font-semibold text-sm">Date & Time</TableHead>
-                  <TableHead className="text-[#64748b] font-semibold text-sm">Duration</TableHead>
-                  <TableHead className="text-[#64748b] font-semibold text-sm text-right">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pastSessions.map((session) => (
-                  <TableRow
-                    key={session.id}
-                    className="hover:bg-[#fafbfc] border-b border-slate-100/60 last:border-0"
-                  >
-                    <TableCell>
-                      <p className="text-sm font-semibold text-[#1e293b]">{session.studentName}</p>
-                      <p className="text-xs text-[#94a3b8] mt-0.5">with {session.mentorName}</p>
-                    </TableCell>
-                    <TableCell className="text-sm text-[#475569]">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5 text-[#94a3b8]" />
-                        <div>
-                          <div className="font-medium">{formatDate(session.startTime)}</div>
-                          <div className="text-xs text-[#94a3b8] mt-0.5">
-                            {formatTime(session.startTime)} – {formatTime(session.endTime)}
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-[#fafbfc] hover:bg-[#fafbfc] border-b border-slate-100/80">
+                    <TableHead className="text-[#64748b] font-semibold text-sm">Student / Mentor</TableHead>
+                    <TableHead className="text-[#64748b] font-semibold text-sm">Date & Time</TableHead>
+                    <TableHead className="text-[#64748b] font-semibold text-sm">Duration</TableHead>
+                    <TableHead className="text-[#64748b] font-semibold text-sm text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedPast.map((session) => (
+                    <TableRow
+                      key={session.id}
+                      className="hover:bg-[#fafbfc] border-b border-slate-100/60 last:border-0"
+                    >
+                      <TableCell>
+                        <p className="text-sm font-semibold text-[#1e293b]">{session.studentName}</p>
+                        <p className="text-xs text-[#94a3b8] mt-0.5">with {session.mentorName}</p>
+                      </TableCell>
+                      <TableCell className="text-sm text-[#475569]">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-[#94a3b8]" />
+                          <div>
+                            <div className="font-medium">{formatDate(session.startTime)}</div>
+                            <div className="text-xs text-[#94a3b8] mt-0.5">
+                              {formatTime(session.startTime)} – {formatTime(session.endTime)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f1f5f9] text-[#475569] rounded-[10px] text-xs font-medium">
-                        <Clock className="w-3 h-3" />
-                        {session.duration} min
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <StatusBadge
-                        variant={getSessionState(session) === 'completed' ? 'completed' : 'inactive'}
-                        size="sm"
-                      >
-                        {getSessionState(session) === 'completed' ? 'Completed' : 'Scheduled'}
-                      </StatusBadge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableCell>
+                      <TableCell>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f1f5f9] text-[#475569] rounded-[10px] text-xs font-medium">
+                          <Clock className="w-3 h-3" />
+                          {session.duration} min
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <StatusBadge
+                          variant={getSessionState(session) === 'completed' ? 'completed' : 'inactive'}
+                          size="sm"
+                        >
+                          {getSessionState(session) === 'completed' ? 'Completed' : 'Scheduled'}
+                        </StatusBadge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {pastTotalPages > 1 && (
+                <div className="flex items-center justify-between p-6 border-t border-slate-100/80">
+                  <p className="text-sm text-[#64748b]">
+                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, pastSessions.length)} of {pastSessions.length} sessions
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: pastTotalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-10 h-10 text-sm font-medium rounded-[14px] transition-colors ${
+                            currentPage === page
+                              ? 'gradient-primary text-white'
+                              : 'text-[#475569] hover:bg-[#fafbfc]'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(pastTotalPages, p + 1))}
+                      disabled={currentPage === pastTotalPages}
+                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
