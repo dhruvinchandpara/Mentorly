@@ -97,7 +97,8 @@ export default function MentorBookingPage() {
   const [bookedInfo, setBookedInfo] = useState<{
     startIso: string
     endIso: string
-    meetLink: string
+    meetLink?: string
+    isPending?: boolean
   } | null>(null)
 
   const [weekOffset, setWeekOffset] = useState(0)
@@ -328,10 +329,12 @@ export default function MentorBookingPage() {
         return
       }
 
+      const meetLinkStr = ('meetLink' in result && typeof result.meetLink === 'string') ? result.meetLink : ''
       setBookedInfo({
         startIso: startDateTime.toISOString(),
         endIso: endDateTime.toISOString(),
-        meetLink: result.meetLink || '',
+        meetLink: meetLinkStr,
+        isPending: result.status === 'pending',
       })
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -389,7 +392,7 @@ export default function MentorBookingPage() {
       title: 'Mentorly Session',
       startIso: bookedInfo.startIso,
       endIso: bookedInfo.endIso,
-      meetLink: bookedInfo.meetLink,
+      meetLink: bookedInfo.meetLink || '',
       mentorName: mentor.profiles?.full_name,
     })
 
@@ -397,13 +400,26 @@ export default function MentorBookingPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
         <div className="max-w-md w-full text-center">
           <div className="card-modern p-10">
-            {/* Success Icon */}
-            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-12 h-12 text-emerald-600" />
-            </div>
-            <h2 className="text-2xl font-semibold text-slate-900 mb-3">Session Booked!</h2>
+            {/* Success / Pending Icon */}
+            {bookedInfo.isPending ? (
+              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-12 h-12 text-amber-600 animate-pulse" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-12 h-12 text-emerald-600" />
+              </div>
+            )}
+
+            <h2 className="text-2xl font-semibold text-slate-900 mb-3">
+              {bookedInfo.isPending ? 'Booking Request Submitted!' : 'Session Booked!'}
+            </h2>
             <p className="text-slate-600 mb-2">
-              Your session with <span className="font-semibold text-slate-900">{mentor.profiles?.full_name}</span> has been confirmed.
+              {bookedInfo.isPending ? (
+                <>Your session request with <span className="font-semibold text-slate-900">{mentor.profiles?.full_name}</span> has been sent to the admin for review. You will receive meeting details upon approval.</>
+              ) : (
+                <>Your session with <span className="font-semibold text-slate-900">{mentor.profiles?.full_name}</span> has been confirmed.</>
+              )}
             </p>
 
             {/* Session details */}
@@ -420,7 +436,7 @@ export default function MentorBookingPage() {
                   {selectedTime && formatTime(selectedTime)} ({slotCount * 15} minutes)
                 </span>
               </div>
-              {bookedInfo.meetLink && (
+              {bookedInfo.meetLink ? (
                 <div className="flex items-center gap-3 text-sm">
                   <Video className="w-4 h-4 text-blue-600 flex-shrink-0" />
                   <a
@@ -432,21 +448,28 @@ export default function MentorBookingPage() {
                     Join Meeting Room
                   </a>
                 </div>
+              ) : (
+                <div className="flex items-center gap-3 text-sm text-amber-700 font-medium">
+                  <Clock className="w-4 h-4 flex-shrink-0" />
+                  <span>Google Meet link will be generated upon admin approval.</span>
+                </div>
               )}
             </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col gap-3">
-              <a
-                href={calUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
-              >
-                <CalendarDays className="w-4 h-4" />
-                Add to Google Calendar
-                <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-              </a>
+              {!bookedInfo.isPending && (
+                <a
+                  href={calUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Add to Google Calendar
+                  <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                </a>
+              )}
               <Link
                 href="/dashboard/student"
                 className="btn-primary w-full text-center"

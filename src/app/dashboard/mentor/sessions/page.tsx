@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SessionNotePanel } from '@/components/ui/session-note-panel'
+import { lockSessionNote } from '@/app/dashboard/admin/actions'
 
 const ITEMS_PER_PAGE = 10
 
@@ -19,10 +21,17 @@ interface Booking {
   start_time: string
   end_time: string
   duration_minutes: number
-  status: 'scheduled' | 'completed' | 'cancelled'
+  status: 'scheduled' | 'completed' | 'cancelled' | 'pending' | 'rejected'
   meet_link: string | null
   profiles: { full_name: string; email: string }
   students?: { bio: string | null }
+  session_notes?: Array<{
+    content: string | null
+    is_locked: boolean
+    last_edited_by: string | null
+    last_edited_at: string | null
+    editor_profile?: { full_name: string } | null
+  }> | null
 }
 
 function getSessionState(startTime: string, endTime: string) {
@@ -71,7 +80,8 @@ export default function SessionsPage() {
           duration_minutes,
           status,
           meet_link,
-          profiles!bookings_student_id_fkey(full_name, email)
+          profiles!bookings_student_id_fkey(full_name, email),
+          session_notes(content, is_locked, last_edited_by, last_edited_at, editor_profile:profiles!session_notes_last_edited_by_fkey(full_name))
         `)
         .eq('mentor_id', profile.id)
         .order('start_time', { ascending: false })
@@ -120,6 +130,7 @@ export default function SessionsPage() {
         .update({ status: 'completed' })
         .eq('id', bookingId)
       if (error) throw error
+      await lockSessionNote(bookingId)
       await fetchBookings()
     } catch (err: any) {
       console.error('Error marking completed:', err)
@@ -319,8 +330,9 @@ export default function SessionsPage() {
           <CardContent className="space-y-3">
             {ongoingSessions.map(session => {
               const studentName = session.profiles?.full_name || 'Unknown Student'
+              const note = session.session_notes?.[0] ?? null
               return (
-                <div key={session.id} className="p-4 bg-white border border-red-200 rounded-xl shadow-sm">
+                <div key={session.id} className="p-4 bg-white border border-red-200 rounded-xl shadow-sm space-y-3">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="space-y-2">
                       <p className="text-lg font-semibold text-blue-950">
@@ -347,6 +359,16 @@ export default function SessionsPage() {
                       </a>
                     )}
                   </div>
+                  {/* Live Session Note Panel */}
+                  <SessionNotePanel
+                    bookingId={session.id}
+                    isLocked={false}
+                    canEdit={true}
+                    editorId={profile?.id}
+                    initialContent={note?.content ?? null}
+                    lastEditedByName={note?.editor_profile?.full_name ?? null}
+                    lastEditedAt={note?.last_edited_at ?? null}
+                  />
                 </div>
               )
             })}
@@ -659,6 +681,10 @@ export default function SessionsPage() {
                   {paginatedHistory.map(session => {
                     const studentName = session.profiles?.full_name || 'Unknown Student'
                     const isCompleted = session.status === 'completed'
+                    const note = session.session_notes?.[0] ?? null
+                    const sessionStart = new Date(session.start_time)
+                    const is24hExpired = Date.now() > sessionStart.getTime() + 24 * 60 * 60 * 1000
+                    const isLocked = note?.is_locked || is24hExpired
                     return (
                       <div key={session.id} className="p-4 bg-white border border-slate-200 rounded-lg">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -697,6 +723,18 @@ export default function SessionsPage() {
                             )}
                           </Badge>
                         </div>
+                        {/* Session Note Panel — only for completed sessions */}
+                        {isCompleted && (
+                          <SessionNotePanel
+                            bookingId={session.id}
+                            isLocked={!!isLocked}
+                            canEdit={true}
+                            editorId={profile?.id}
+                            initialContent={note?.content ?? null}
+                            lastEditedByName={note?.editor_profile?.full_name ?? null}
+                            lastEditedAt={note?.last_edited_at ?? null}
+                          />
+                        )}
                       </div>
                     )
                   })}

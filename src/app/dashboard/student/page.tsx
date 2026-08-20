@@ -4,10 +4,11 @@ import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Clock, Video, Radio, ArrowRight, Calendar, Loader2
+  Clock, Video, Radio, ArrowRight, Calendar, Loader2, AlertCircle, XCircle
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { useBookings } from '@/hooks/useBookings'
 
 /** Returns the call button state for a given booking */
@@ -25,7 +26,7 @@ function getCallState(startTime: string, endTime: string) {
 
 export default function StudentHome() {
   const { profile } = useAuth()
-  const { data: bookings = [], isLoading: loading } = useBookings('scheduled')
+  const { data: bookings = [], isLoading: loading } = useBookings()
   const [, setTick] = useState(0)
 
   useEffect(() => {
@@ -33,27 +34,31 @@ export default function StudentHome() {
     return () => clearInterval(id)
   }, [])
 
-  // Categorize bookings - sort by start_time ascending for scheduled bookings
-  const sortedBookings = [...bookings].sort((a, b) =>
-    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-  )
-
-  const now = new Date()
-  const ongoingSessions = sortedBookings.filter(b => {
-    const state = getCallState(b.start_time, b.end_time)
-    return state === 'live'
-  })
-
-  const upcomingSessions = sortedBookings.filter(b => {
-    const state = getCallState(b.start_time, b.end_time)
-    return state !== 'live' && new Date(b.start_time) > now
-  }).slice(0, 3)
-
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
+  // Categorize bookings
+  const now = new Date()
+
+  const pendingSessions = bookings.filter(b => b.status === 'pending')
+  const rejectedSessions = bookings.filter(b => b.status === 'rejected')
+
+  const scheduledBookings = bookings
+    .filter(b => b.status === 'scheduled')
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+
+  const ongoingSessions = scheduledBookings.filter(b => {
+    const state = getCallState(b.start_time, b.end_time)
+    return state === 'live'
+  })
+
+  const upcomingSessions = scheduledBookings.filter(b => {
+    const state = getCallState(b.start_time, b.end_time)
+    return state !== 'live' && new Date(b.start_time) > now
+  }).slice(0, 3)
 
   if (loading) {
     return (
@@ -75,7 +80,76 @@ export default function StudentHome() {
         </p>
       </div>
 
-      {/* 1. Ongoing Sessions */}
+      {/* 1. Pending Admin Approvals Banner */}
+      {pendingSessions.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
+              <CardTitle className="text-base font-semibold text-amber-900">
+                Session Requests Awaiting Admin Review ({pendingSessions.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingSessions.map((booking) => (
+                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-amber-200 rounded-lg gap-2">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">
+                      Requested session with {booking.mentors.profiles.full_name}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes} min)
+                    </p>
+                  </div>
+                  <StatusBadge variant="pending">
+                    Awaiting Approval
+                  </StatusBadge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 2. Rejected Requests Alert Banner */}
+      {rejectedSessions.length > 0 && (
+        <Card className="border-rose-200 bg-rose-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-rose-600" />
+              <CardTitle className="text-base font-semibold text-rose-900">
+                Rejected Meeting Requests ({rejectedSessions.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {rejectedSessions.map((booking) => (
+                <div key={booking.id} className="p-4 bg-white border border-rose-200 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-rose-900">
+                      Meeting request with {booking.mentors.profiles.full_name} was rejected
+                    </p>
+                    <StatusBadge variant="rejected">Rejected</StatusBadge>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    {formatDate(booking.start_time)} at {formatTime(booking.start_time)}
+                  </p>
+                  {booking.rejection_reason && (
+                    <p className="text-xs text-rose-700 font-medium bg-rose-50 p-2 rounded mt-1">
+                      Reason: {booking.rejection_reason}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 3. Ongoing Sessions */}
       {ongoingSessions.length > 0 && (
         <Card className="border-red-200 bg-red-50/50">
           <CardHeader className="pb-4">
@@ -121,7 +195,7 @@ export default function StudentHome() {
         </Card>
       )}
 
-      {/* 2. Next Upcoming Sessions */}
+      {/* 4. Next Upcoming Sessions */}
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -139,7 +213,7 @@ export default function StudentHome() {
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
                 <Calendar className="w-6 h-6 text-slate-400" />
               </div>
-              <p className="text-sm text-slate-600">No upcoming sessions scheduled.</p>
+              <p className="text-sm text-slate-600">No upcoming approved sessions scheduled.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -181,7 +255,7 @@ export default function StudentHome() {
                       ) : (
                         <Badge variant="outline" className="text-slate-600 border-slate-300">
                           <Clock className="w-3 h-3 mr-1" />
-                          Scheduled
+                          Approved & Scheduled
                         </Badge>
                       )}
                     </div>
@@ -193,7 +267,7 @@ export default function StudentHome() {
         </CardContent>
       </Card>
 
-      {/* 3. Find Mentor CTA */}
+      {/* 5. Find Mentor CTA */}
       <Card className="bg-gradient-to-br from-blue-50 to-violet-50 border-blue-200">
         <CardContent className="p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center mx-auto mb-4">

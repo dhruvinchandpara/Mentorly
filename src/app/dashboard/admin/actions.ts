@@ -1,6 +1,8 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, getAdminUserId } from '@/lib/supabase/admin'
+import { createGoogleMeetingWithOAuth } from '@/lib/google-calendar-oauth'
+import { isGoogleConnected } from '@/lib/google-oauth'
 
 export type CreateMentorInput = {
  fullName: string
@@ -438,4 +440,239 @@ export async function bulkImportMentors(mentors: BulkImportMentorInput[]): Promi
  result.success = result.failureCount === 0
 
  return result
+}
+
+export async function approveBooking(bookingId: string) {
+  try {
+    const supabase = createAdminClient()
+
+    // 1. Fetch booking record
+    const { data: booking, error: fetchErr } = await supabase
+      .from('bookings')
+      .select('id, mentor_id, student_id, start_time, end_time, status')
+      .eq('id', bookingId)
+      .single()
+
+    if (fetchErr || !booking) {
+      return { success: false, error: 'Booking not found.' }
+    }
+
+    if (booking.status !== 'pending') {
+      return { success: false, error: `Booking is already ${booking.status}.` }
+    }
+
+    // 2. Fetch mentor & student details
+    const { data: mentor, error: mentorErr } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', booking.mentor_id)
+      .single()
+
+    const { data: student, error: studentErr } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', booking.student_id)
+      .single()
+
+    if (mentorErr || studentErr || !mentor || !student) {
+      return { success: false, error: 'Failed to fetch participant details.' }
+    }
+
+    // 3. Get admin user ID & check Google account connection
+    let adminUserId: string
+    try {
+      adminUserId = await getAdminUserId()
+    } catch (error) {
+      return { success: false, error: 'Admin account not properly configured.' }
+    }
+
+    const googleConnected = await isGoogleConnected(adminUserId)
+    if (!googleConnected) {
+      return {
+        success: false,
+        error: 'Admin has not connected their Google account for meeting creation.',
+      }
+    }
+
+    const { data: admin } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', adminUserId)
+      .single()
+
+    // 4. Generate Google Meet link via OAuth
+    let calResult
+    try {
+      calResult = await createGoogleMeetingWithOAuth({
+        userId: adminUserId,
+        title: `Mentorship: ${student.full_name} with ${mentor.full_name}`,
+        description: `Mentorly approved session on ${new Date(booking.start_time).toLocaleDateString()}.`,
+        startTime: booking.start_time,
+        endTime: booking.end_time,
+        attendees: [admin?.email || '', mentor.email || '', student.email || ''].filter(Boolean),
+      })
+    } catch (calErr: any) {
+      console.error('Google Calendar OAuth generation failed during approval:', calErr)
+      return {
+        success: false,
+        error: calErr?.message || 'Failed to create Google Meet link. Please check Google OAuth connection.',
+      }
+    }
+
+    if (!calResult || !calResult.meetLink) {
+      return { success: false, error: 'Google Meet link was not generated.' }
+    }
+
+    // 5. Update booking to status 'scheduled' with meet_link & google_event_id
+    const { error: updateErr } = await supabase
+      .from('bookings')
+      .update({
+        status: 'scheduled',
+        meet_link: calResult.meetLink,
+        google_event_id: calResult.eventId,
+      })
+      .eq('id', bookingId)
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message }
+    }
+
+    return { success: true, meetLink: calResult.meetLink }
+  } catch (error) {
+    console.error('Approve booking error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred.',
+    }
+  }
+}
+
+export async function rejectBooking(bookingId: string, reason?: string) {
+  try {
+    const supabase = createAdminClient()
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'rejected',
+        rejection_reason: reason?.trim() || 'Declined by administrator',
+      })
+      .eq('id', bookingId)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Reject booking error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred.',
+    }
+  }
+}
+
+// ── Session Notes ────────────────────────────────────────────────────────────
+
+/**
+ * Upserts the shared post-meeting note for a booking.
+ * Only the mentor or student of the booking can call this.
+ * The note is rejected if already locked or 24h have passed since session start.
+ */
+export async function saveSessionNote(
+  bookingId: string,
+  content: string,
+  editorId: string
+) {
+  try {
+    const supabase = createAdminClient()
+
+    // Verify booking exists and editor is the mentor
+    const { data: booking, error: bookingErr } = await supabase
+      .from('bookings')
+      .select('id, mentor_id, student_id, start_time, status')
+      .eq('id', bookingId)
+      .single()
+
+    if (bookingErr || !booking) {
+      return { success: false, error: 'Booking not found.' }
+    }
+
+    const isMentor = booking.mentor_id === editorId
+    if (!isMentor) {
+      return { success: false, error: 'Only the mentor can edit session notes.' }
+    }
+
+    // Check for 24h time-based lock (no cron needed)
+    const sessionStart = new Date(booking.start_time)
+    const twentyFourHoursAfterStart = new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000)
+    const isTimeExpired = new Date() > twentyFourHoursAfterStart
+
+    // Check if already explicitly locked in DB
+    const { data: existingNote } = await supabase
+      .from('session_notes')
+      .select('is_locked')
+      .eq('booking_id', bookingId)
+      .maybeSingle()
+
+    if (existingNote?.is_locked || isTimeExpired) {
+      return { success: false, error: 'This note is locked and can no longer be edited.' }
+    }
+
+    // Upsert the note (creates or updates)
+    const { error: upsertErr } = await supabase
+      .from('session_notes')
+      .upsert(
+        {
+          booking_id: bookingId,
+          content: content.trim(),
+          last_edited_by: editorId,
+          last_edited_at: new Date().toISOString(),
+          is_locked: false,
+        },
+        { onConflict: 'booking_id' }
+      )
+
+    if (upsertErr) {
+      return { success: false, error: upsertErr.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('saveSessionNote error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unexpected error.',
+    }
+  }
+}
+
+/**
+ * Permanently locks a session note.
+ * Called when the mentor marks the session as completed.
+ */
+export async function lockSessionNote(bookingId: string) {
+  try {
+    const supabase = createAdminClient()
+
+    const { error } = await supabase
+      .from('session_notes')
+      .upsert(
+        { booking_id: bookingId, is_locked: true },
+        { onConflict: 'booking_id' }
+      )
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('lockSessionNote error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unexpected error.',
+    }
+  }
 }
