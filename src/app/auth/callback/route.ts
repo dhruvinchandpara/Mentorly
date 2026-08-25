@@ -3,22 +3,30 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
- const { searchParams, origin } = new URL(request.url)
+ const { searchParams } = new URL(request.url)
  const code = searchParams.get('code')
- // if "next" is in param, use it as the redirect URL
  const next = searchParams.get('next') ?? '/'
+ const error = searchParams.get('error')
+ const errorDescription = searchParams.get('error_description')
+
+ // If there's an OAuth error parameter, redirect to error page with description
+ if (error || errorDescription) {
+   const errorUrl = new URL('/auth/auth-code-error', request.url)
+   errorUrl.searchParams.set('error_description', errorDescription || error || 'Authentication failed')
+   return NextResponse.redirect(errorUrl)
+ }
 
  if (code) {
- const supabase = await createClient()
- const { error } = await supabase.auth.exchangeCodeForSession(code)
- if (!error) {
- return NextResponse.redirect(new URL(next, request.url))
- } else {
- // Add error details to redirect using relative URL resolution
- const errorUrl = new URL('/auth/auth-code-error', request.url)
- errorUrl.searchParams.set('error_description', error.message)
- return NextResponse.redirect(errorUrl)
- }
+   const supabase = await createClient()
+   const { error } = await supabase.auth.exchangeCodeForSession(code)
+   if (!error) {
+     return NextResponse.redirect(new URL(next, request.url))
+   } else {
+     // Add error details to redirect using relative URL resolution
+     const errorUrl = new URL('/auth/auth-code-error', request.url)
+     errorUrl.searchParams.set('error_description', error.message)
+     return NextResponse.redirect(errorUrl)
+   }
  }
 
  // fallback error if no code
