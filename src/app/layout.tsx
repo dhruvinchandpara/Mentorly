@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
+import { TestRoleSwitcher } from "@/components/ui/test-role-switcher";
 
 // Modern, professional sans-serif - exceptional for UI clarity
 const inter = Inter({
@@ -54,10 +55,11 @@ export default function RootLayout({
  suppressHydrationWarning
  >
  <AuthProvider>
- <QueryProvider>
- {children}
- </QueryProvider>
- </AuthProvider>
+        <QueryProvider>
+          {children}
+          <TestRoleSwitcher />
+        </QueryProvider>
+      </AuthProvider>
  </body>
  </html>
  );
