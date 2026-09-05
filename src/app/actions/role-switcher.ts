@@ -4,8 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
-// Define the authorized test accounts here
-const TEST_EMAILS = ['dopekid791@gmail.com', 'rishi@mesaschool.com']
+import { TEST_EMAILS } from '@/lib/test-accounts'
 
 export async function switchRole(newRole: 'admin' | 'mentor' | 'student') {
   const supabase = await createClient()

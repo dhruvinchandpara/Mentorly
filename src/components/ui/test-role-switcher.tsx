@@ -6,7 +6,7 @@ import { switchRole } from '@/app/actions/role-switcher'
 import { useRouter } from 'next/navigation'
 import { Settings, Loader2, Shield, GraduationCap, Users } from 'lucide-react'
 
-const TEST_EMAILS = ['dopekid791@gmail.com', 'rishi@mesaschool.com']
+import { TEST_EMAILS } from '@/lib/test-accounts'
 
 export function TestRoleSwitcher() {
   const { user, profile } = useAuth()
