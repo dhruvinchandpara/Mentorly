@@ -448,8 +448,8 @@ export async function approveBooking(bookingId: string) {
 
     // 1. Fetch booking record
     const { data: booking, error: fetchErr } = await supabase
-      .from('bookings')
-      .select('id, mentor_id, student_id, start_time, end_time, status')
+      .from('sessions')
+      .select('id, mentor_id, student_id, requested_date, requested_start_time, start_time, end_time, status, duration_minutes')
       .eq('id', bookingId)
       .single()
 
@@ -457,7 +457,7 @@ export async function approveBooking(bookingId: string) {
       return { success: false, error: 'Booking not found.' }
     }
 
-    if (booking.status !== 'pending') {
+    if (booking.status !== 'pending' && booking.status !== 'requested') {
       return { success: false, error: `Booking is already ${booking.status}.` }
     }
 
@@ -524,14 +524,18 @@ export async function approveBooking(bookingId: string) {
     }
 
     // 5. Update booking to status 'scheduled' with meet_link & google_event_id
-    const { error: updateErr } = await supabase
-      .from('bookings')
-      .update({
-        status: 'scheduled',
-        meet_link: calResult.meetLink,
-        google_event_id: calResult.eventId,
-      })
+    let updateErr: any = null
+    const { error: sessUpdateErr } = await supabase
+      .from('sessions')
+      .update({ status: 'scheduled', meet_link: calResult.meetLink, google_event_id: calResult.eventId })
       .eq('id', bookingId)
+    if (sessUpdateErr) {
+      const { error: bookUpdateErr } = await supabase
+        .from('bookings')
+        .update({ status: 'scheduled', meet_link: calResult.meetLink, google_event_id: calResult.eventId })
+        .eq('id', bookingId)
+      updateErr = bookUpdateErr
+    }
 
     if (updateErr) {
       return { success: false, error: updateErr.message }
@@ -551,13 +555,18 @@ export async function rejectBooking(bookingId: string, reason?: string) {
   try {
     const supabase = createAdminClient()
 
-    const { error } = await supabase
-      .from('bookings')
-      .update({
-        status: 'rejected',
-        rejection_reason: reason?.trim() || 'Declined by administrator',
-      })
+    let error: any = null
+    const { error: sessErr } = await supabase
+      .from('sessions')
+      .update({ status: 'rejected', rejection_reason: reason?.trim() || 'Declined by administrator' })
       .eq('id', bookingId)
+    if (sessErr) {
+      const { error: bookErr } = await supabase
+        .from('bookings')
+        .update({ status: 'rejected', rejection_reason: reason?.trim() || 'Declined by administrator' })
+        .eq('id', bookingId)
+      error = bookErr
+    }
 
     if (error) {
       return { success: false, error: error.message }

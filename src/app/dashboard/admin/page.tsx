@@ -74,9 +74,14 @@ export default function AdminHome() {
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true)
 
-      const { count: totalBookings } = await supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
+      // Try sessions table first for count, fallback to bookings view
+      let totalBookings: number | null = null
+      const { count: sessCount, error: sessCountErr } = await supabase.from('sessions').select('*', { count: 'exact', head: true })
+      totalBookings = sessCountErr ? null : sessCount
+      if (totalBookings === null) {
+        const { count: bCount } = await supabase.from('bookings').select('*', { count: 'exact', head: true })
+        totalBookings = bCount
+      }
 
       const { count: authorizedStudents } = await supabase
         .from('authorized_students')
@@ -92,19 +97,20 @@ export default function AdminHome() {
 
       // Fetch all scheduled sessions
       const { data: sessionsList } = await supabase
-        .from('bookings')
+        .from('sessions')
         .select(`
           id,
+          requested_date, requested_start_time,
           start_time,
           end_time,
           duration_minutes,
           status,
           meet_link,
-          student_profiles:profiles!bookings_student_id_fkey(full_name),
-          mentor_profiles:mentors(profiles(full_name))
+          student_profiles:profiles!sessions_student_id_fkey(full_name),
+          mentor_profiles:profiles!sessions_mentor_id_fkey(full_name)
         `)
         .eq('status', 'scheduled')
-        .order('start_time', { ascending: true })
+        .order('requested_date', { ascending: false })
 
       if (sessionsList && Array.isArray(sessionsList)) {
         const now = new Date()
@@ -116,11 +122,12 @@ export default function AdminHome() {
             ? String(s.student_profiles.full_name || 'Unknown')
             : 'Unknown'
 
-          const mentorName = (s.mentor_profiles && typeof s.mentor_profiles === 'object' && 'profiles' in s.mentor_profiles)
-            ? ((s.mentor_profiles.profiles && typeof s.mentor_profiles.profiles === 'object' && 'full_name' in s.mentor_profiles.profiles)
-              ? String(s.mentor_profiles.profiles.full_name || 'Unknown')
-              : 'Unknown')
-            : 'Unknown'
+          // mentor_profiles is flat from sessions table (direct profiles join)
+          const mentorName = (s.mentor_profiles && typeof s.mentor_profiles === 'object' && 'full_name' in s.mentor_profiles)
+            ? String((s.mentor_profiles as any).full_name || 'Unknown')
+            : (s.mentor_profiles && typeof s.mentor_profiles === 'object' && 'profiles' in s.mentor_profiles)
+              ? String((s.mentor_profiles as any).profiles?.full_name || 'Unknown')
+              : 'Unknown'
 
           const session: SessionInfo = {
             id: s.id || '',

@@ -11,6 +11,7 @@ export type BookingInput = {
  endTime: string // ISO string in UTC
  durationMinutes: number // Must be multiple of 15 (15, 30, 45, 60, etc.)
  slotCount?: number // Number of consecutive 15-min slots (defaults to durationMinutes / 15)
+ preWorkReason?: string
 }
 
 // Helper function to ensure times are in UTC/ISO format
@@ -85,20 +86,50 @@ export async function processBooking(input: BookingInput) {
  }
  }
 
- // 3. Create booking record with status 'pending' (awaiting admin approval)
- const { data: newBooking, error: bookingErr } = await supabase
- .from('bookings')
- .insert({
- mentor_id: input.mentorId,
- student_id: input.studentId,
- start_time: startTimeUTC,
- end_time: endTimeUTC,
- duration_minutes: input.durationMinutes,
- slot_count: slotCount,
- status: 'pending',
- })
- .select('id')
- .single()
+ // 3. Create session/booking record
+ const requestedDate = new Date(startTimeUTC).toISOString().split('T')[0]
+ const requestedStartTime = new Date(startTimeUTC).toISOString().split('T')[1].substring(0, 8)
+ const preWorkReason = input.preWorkReason || 'General mentorship session'
+
+ let newBooking: any = null
+ let bookingErr: any = null
+
+ const { data: sessionRes, error: sessionInsertErr } = await supabase
+  .from('sessions')
+  .insert({
+   mentor_id: input.mentorId,
+   student_id: input.studentId,
+   requested_date: requestedDate,
+   requested_start_time: requestedStartTime,
+   start_time: startTimeUTC,
+   end_time: endTimeUTC,
+   duration_minutes: input.durationMinutes,
+   slot_count: slotCount,
+   pre_work_reason: preWorkReason,
+   status: 'requested',
+  })
+  .select('id')
+  .single()
+
+ if (!sessionInsertErr && sessionRes) {
+  newBooking = sessionRes
+ } else {
+  const { data: bRes, error: bErr } = await supabase
+   .from('bookings')
+   .insert({
+    mentor_id: input.mentorId,
+    student_id: input.studentId,
+    start_time: startTimeUTC,
+    end_time: endTimeUTC,
+    duration_minutes: input.durationMinutes,
+    slot_count: slotCount,
+    status: 'pending',
+   })
+   .select('id')
+   .single()
+  newBooking = bRes
+  bookingErr = bErr
+ }
 
  if (bookingErr || !newBooking) {
  return {

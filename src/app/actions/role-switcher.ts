@@ -47,10 +47,18 @@ export async function switchRole(newRole: 'admin' | 'mentor' | 'student') {
       if (studentError) throw studentError
     }
 
-    // 2. Update the role in profiles table
+    // 2. Update the role in profiles table with consolidated fields
+    const profileUpdates: any = { role: newRole }
+    if (newRole === 'student') {
+      profileUpdates.is_authorized = true
+    } else if (newRole === 'mentor') {
+      profileUpdates.is_active = true
+      profileUpdates.hourly_rate = 0
+    }
+
     const { error: roleError } = await adminClient
       .from('profiles')
-      .update({ role: newRole })
+      .update(profileUpdates)
       .eq('id', userId)
 
     if (roleError) throw roleError

@@ -77,23 +77,46 @@ export default function AdminSessions() {
 
   const fetchSessions = async () => {
     try {
-      const { data: sessionsList } = await supabase
-        .from('bookings')
+      // Try new sessions table first, fall back to legacy bookings view
+      let sessionsList: any[] | null = null
+      const { data: sessData, error: sessErr } = await supabase
+        .from('sessions')
         .select(`
-          id,
-          student_id,
-          mentor_id,
-          start_time,
-          end_time,
-          duration_minutes,
-          status,
-          rejection_reason,
-          meet_link,
-          student_profiles:profiles!bookings_student_id_fkey(full_name),
-          mentor_profiles:mentors(profiles(full_name)),
-          session_notes(content, is_locked, last_edited_by, last_edited_at, editor_profile:profiles!session_notes_last_edited_by_fkey(full_name))
+          id, student_id, mentor_id,
+          requested_date, requested_start_time, start_time, end_time,
+          duration_minutes, actual_duration_minutes, status, rejection_reason, meet_link,
+          pre_work_reason, student_actionables, key_insights,
+          student_profiles:profiles!sessions_student_id_fkey(full_name),
+          mentor_profiles:profiles!sessions_mentor_id_fkey(full_name)
         `)
-        .order('start_time', { ascending: false });
+        .order('requested_date', { ascending: false })
+      
+      if (!sessErr && sessData) {
+        sessionsList = sessData.map((s: any) => ({
+          ...s,
+          start_time: s.start_time || (s.requested_date ? new Date(s.requested_date + 'T' + (s.requested_start_time || '00:00:00') + 'Z').toISOString() : null),
+          mentor_profiles: s.mentor_profiles ? { profiles: s.mentor_profiles } : null,
+          session_notes: s.student_actionables ? [{
+            content: s.student_actionables,
+            is_locked: true,
+            last_edited_by: s.mentor_id,
+            last_edited_at: null,
+            editor_profile: null
+          }] : []
+        }))
+      } else {
+        const { data: legacyData } = await supabase
+          .from('bookings')
+          .select(`
+            id, student_id, mentor_id, start_time, end_time, duration_minutes,
+            status, rejection_reason, meet_link,
+            student_profiles:profiles!bookings_student_id_fkey(full_name),
+            mentor_profiles:mentors(profiles(full_name)),
+            session_notes(content, is_locked, last_edited_by, last_edited_at, editor_profile:profiles!session_notes_last_edited_by_fkey(full_name))
+          `)
+          .order('start_time', { ascending: false })
+        sessionsList = legacyData
+      }
 
       if (sessionsList && Array.isArray(sessionsList)) {
         setSessions(
