@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { RejectReasonModal } from '@/components/ui/reject-reason-modal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -65,6 +66,8 @@ export default function AdminSessions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [rejectModalSessionId, setRejectModalSessionId] = useState<string | null>(null);
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authLoading) fetchSessions();
@@ -176,16 +179,26 @@ export default function AdminSessions() {
     }
   };
 
-  const handleReject = async (bookingId: string) => {
-    const reason = prompt('Please enter a reason for rejecting this session (optional):', 'Schedule conflict');
-    if (reason === null) return; // User cancelled prompt
+  const openRejectModal = (bookingId: string) => {
+    setRejectModalSessionId(bookingId);
+  };
 
-    setActionLoading((prev) => ({ ...prev, [bookingId]: true }));
+  const closeRejectModal = () => {
+    if (rejectSubmitting) return;
+    setRejectModalSessionId(null);
+  };
+
+  const handleConfirmReject = async (reason: string) => {
+    const bookingId = rejectModalSessionId;
+    if (!bookingId) return;
+
+    setRejectSubmitting(true);
     setFeedback(null);
     try {
       const res = await rejectBooking(bookingId, reason);
       if (res.success) {
-        setFeedback({ type: 'success', message: 'Session request has been rejected.' });
+        setFeedback({ type: 'success', message: 'Session request rejected' });
+        setRejectModalSessionId(null);
         await fetchSessions();
       } else {
         setFeedback({ type: 'error', message: res.error || 'Failed to reject session.' });
@@ -193,7 +206,7 @@ export default function AdminSessions() {
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'An error occurred during rejection.' });
     } finally {
-      setActionLoading((prev) => ({ ...prev, [bookingId]: false }));
+      setRejectSubmitting(false);
     }
   };
 
@@ -737,6 +750,15 @@ export default function AdminSessions() {
           )}
         </CardContent>
       </Card>
+
+      <RejectReasonModal
+        open={rejectModalSessionId !== null}
+        onOpenChange={(open) => {
+          if (!open) closeRejectModal();
+        }}
+        onConfirm={handleConfirmReject}
+        submitting={rejectSubmitting}
+      />
     </div>
   );
 }
