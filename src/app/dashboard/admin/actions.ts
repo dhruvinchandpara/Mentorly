@@ -3,6 +3,7 @@
 import { createAdminClient, getAdminUserId } from '@/lib/supabase/admin'
 import { createGoogleMeetingWithOAuth } from '@/lib/google-calendar-oauth'
 import { isGoogleConnected } from '@/lib/google-oauth'
+import { validateRejectionReason } from '@/lib/booking-validation'
 
 export type CreateMentorInput = {
  fullName: string
@@ -551,25 +552,22 @@ export async function approveBooking(bookingId: string) {
   }
 }
 
-export async function rejectBooking(bookingId: string, reason?: string) {
+export async function rejectBooking(bookingId: string, reason: string) {
+  const validation = validateRejectionReason(reason)
+  if (!validation.valid) {
+    return { success: false, error: validation.error }
+  }
+
   try {
     const supabase = createAdminClient()
 
-    let error: any = null
     const { error: sessErr } = await supabase
       .from('sessions')
-      .update({ status: 'rejected', rejection_reason: reason?.trim() || 'Declined by administrator' })
+      .update({ status: 'rejected', rejection_reason: reason.trim() })
       .eq('id', bookingId)
-    if (sessErr) {
-      const { error: bookErr } = await supabase
-        .from('bookings')
-        .update({ status: 'rejected', rejection_reason: reason?.trim() || 'Declined by administrator' })
-        .eq('id', bookingId)
-      error = bookErr
-    }
 
-    if (error) {
-      return { success: false, error: error.message }
+    if (sessErr) {
+      return { success: false, error: sessErr.message }
     }
 
     return { success: true }
