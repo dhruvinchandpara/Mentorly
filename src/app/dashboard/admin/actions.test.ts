@@ -1,9 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => {
+const { createAdminClientMock } = vi.hoisted(() => ({
+  createAdminClientMock: vi.fn(() => {
     throw new Error('rejectBooking should validate the reason before creating a Supabase client')
-  },
+  }),
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: createAdminClientMock,
   getAdminUserId: () => {
     throw new Error('not needed for this test')
   },
@@ -28,11 +32,13 @@ describe('rejectBooking validation', () => {
     const result = await rejectBooking('session-1', '')
     expect(result.success).toBe(false)
     expect(result.error).toMatch(/reason/i)
+    expect(createAdminClientMock).not.toHaveBeenCalled()
   })
 
   it('rejects a whitespace-only reason without touching the database', async () => {
     const result = await rejectBooking('session-1', '   ')
     expect(result.success).toBe(false)
     expect(result.error).toMatch(/reason/i)
+    expect(createAdminClientMock).not.toHaveBeenCalled()
   })
 })
