@@ -16,12 +16,10 @@ import {
   Check,
   X,
   AlertCircle,
-  FileText,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Input } from '@/components/ui/input';
-import { SessionNotePanel } from '@/components/ui/session-note-panel';
 import {
   Table,
   TableBody,
@@ -358,19 +356,25 @@ export default function AdminSessions() {
               {pendingSessions.map((session) => {
                 const isLoading = actionLoading[session.id] || false;
 
-                // Find prior completed notes for this student & mentor pair
-                const priorNotes = sessions
+                const priorSession: PriorSessionInfo = sessions
                   .filter(
                     (s) =>
                       s.studentId === session.studentId &&
                       s.mentorId === session.mentorId &&
-                      s.status === 'completed' &&
-                      s.sessionNote &&
-                      s.sessionNote.content &&
-                      new Date(s.startTime).getTime() < new Date(session.startTime).getTime()
+                      s.id !== session.id &&
+                      !!s.postSessionSubmittedAt
                   )
-                  .map((s) => s.sessionNote!)
-                  .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime());
+                  .sort(
+                    (a, b) =>
+                      new Date(b.postSessionSubmittedAt as string).getTime() -
+                      new Date(a.postSessionSubmittedAt as string).getTime()
+                  )
+                  .map((s) => ({
+                    keyInsights: s.keyInsights,
+                    studentActionables: s.studentActionables,
+                    status: s.status,
+                    postSessionSubmittedAt: s.postSessionSubmittedAt as string,
+                  }))[0] ?? null;
 
                 return (
                   <div
@@ -402,7 +406,7 @@ export default function AdminSessions() {
 
                       <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                         <button
-                          onClick={() => handleReject(session.id)}
+                          onClick={() => openRejectModal(session.id)}
                           disabled={isLoading}
                           className="px-4 py-2 text-xs font-semibold text-white bg-[#BA3B41] hover:bg-[#A8343A] rounded-full disabled:opacity-50 shadow-sm transition-all flex items-center gap-1.5"
                         >
@@ -429,49 +433,36 @@ export default function AdminSessions() {
                       </div>
                     </div>
 
-                    {/* Previous Session Notes Review Section */}
-                    {priorNotes.length > 0 ? (
+                    {session.preWorkReason && (
                       <div className="pt-2 border-t border-border">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-primary" />
-                            Previous Session Note ({priorNotes.length})
-                          </span>
-                          <span className="text-[11px] text-[var(--fg-faint)]">
-                            From meeting on {formatDate(priorNotes[0].sessionDate)}
-                          </span>
-                        </div>
-                        <SessionNotePanel
-                          bookingId={priorNotes[0].bookingId}
-                          isLocked={true}
-                          canEdit={false}
-                          initialContent={priorNotes[0].content}
-                          lastEditedByName={priorNotes[0].lastEditedByName ?? null}
-                          lastEditedAt={priorNotes[0].lastEditedAt ?? null}
-                        />
-                        {priorNotes.length > 1 && (
-                          <details className="mt-2 text-xs">
-                            <summary className="cursor-pointer text-primary font-medium hover:underline">
-                              View {priorNotes.length - 1} older session note(s)
-                            </summary>
-                            <div className="space-y-2 mt-2 pl-2 border-l-2 border-border">
-                              {priorNotes.slice(1).map((n) => (
-                                <div key={n.bookingId} className="bg-secondary p-2.5 rounded-lg border border-border">
-                                  <div className="text-[11px] text-[var(--fg-faint)] font-medium mb-1">
-                                    Meeting on {formatDate(n.sessionDate)}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{n.content}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </details>
-                        )}
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Reason for session:</p>
+                        <p className="text-sm text-foreground">{session.preWorkReason}</p>
                       </div>
-                    ) : (
-                      <div className="pt-2 border-t border-border">
-                        <div className="flex items-center gap-2 p-2.5 bg-warning-bg/80 border border-warning/80 rounded-xl text-warning text-xs font-medium">
-                          <AlertCircle className="w-4 h-4 text-warning flex-shrink-0" />
-                          <span>No previous session note found for this mentor-student pairing. Consider checking proof of work before approving.</span>
+                    )}
+
+                    {priorSession && (
+                      <div className="rounded-[14px] bg-muted p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-foreground">
+                            Previous session with this mentor
+                          </span>
+                          {priorSession.status !== 'completed' && (
+                            <StatusBadge variant="pending" size="sm" icon={false} className="rounded-full">
+                              Unapproved
+                            </StatusBadge>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-semibold text-muted-foreground">What happened last time</p>
+                          <p className="text-sm text-foreground">
+                            {priorSession.keyInsights || <span className="text-muted-foreground">Not recorded</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-semibold text-muted-foreground">Assigned before this session</p>
+                          <p className="text-sm text-foreground">
+                            {priorSession.studentActionables || <span className="text-muted-foreground">Not recorded</span>}
+                          </p>
                         </div>
                       </div>
                     )}
