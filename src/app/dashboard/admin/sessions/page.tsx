@@ -68,6 +68,7 @@ export default function AdminSessions() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [rejectModalSessionId, setRejectModalSessionId] = useState<string | null>(null);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading) fetchSessions();
@@ -106,8 +107,7 @@ export default function AdminSessions() {
             id, student_id, mentor_id, start_time, end_time, duration_minutes,
             status, rejection_reason, meet_link,
             student_profiles:profiles!bookings_student_id_fkey(full_name),
-            mentor_profiles:mentors(profiles(full_name)),
-            session_notes(content, is_locked, last_edited_by, last_edited_at, editor_profile:profiles!session_notes_last_edited_by_fkey(full_name))
+            mentor_profiles:mentors(profiles(full_name))
           `)
           .order('start_time', { ascending: false })
         sessionsList = legacyData
@@ -180,6 +180,7 @@ export default function AdminSessions() {
   };
 
   const openRejectModal = (bookingId: string) => {
+    setRejectError(null);
     setRejectModalSessionId(bookingId);
   };
 
@@ -194,6 +195,7 @@ export default function AdminSessions() {
 
     setRejectSubmitting(true);
     setFeedback(null);
+    setRejectError(null);
     try {
       const res = await rejectBooking(bookingId, reason);
       if (res.success) {
@@ -201,10 +203,12 @@ export default function AdminSessions() {
         setRejectModalSessionId(null);
         await fetchSessions();
       } else {
-        setFeedback({ type: 'error', message: res.error || 'Failed to reject session.' });
+        // Shown in-modal (below the textarea) rather than the page banner, since the
+        // banner can be hidden behind the modal's backdrop or scrolled out of view.
+        setRejectError(res.error || 'Failed to reject session.');
       }
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'An error occurred during rejection.' });
+      setRejectError(err.message || 'An error occurred during rejection.');
     } finally {
       setRejectSubmitting(false);
     }
@@ -369,6 +373,9 @@ export default function AdminSessions() {
               {pendingSessions.map((session) => {
                 const isLoading = actionLoading[session.id] || false;
 
+                // Sorted by postSessionSubmittedAt (when the post-session form was filed), not
+                // startTime: we intentionally want the most recently *reported-on* prior session,
+                // regardless of its approval status.
                 const priorSession: PriorSessionInfo = sessions
                   .filter(
                     (s) =>
@@ -418,6 +425,9 @@ export default function AdminSessions() {
                       </div>
 
                       <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                        {/* Hardcoded hex, not --primary/--destructive: those tokens are inverted for this
+                            screen (--primary resolves to crimson, --destructive to dark-maroon), so a
+                            "convert to tokens" cleanup should not touch these without reconciling that. */}
                         <button
                           onClick={() => openRejectModal(session.id)}
                           disabled={isLoading}
@@ -758,6 +768,7 @@ export default function AdminSessions() {
         }}
         onConfirm={handleConfirmReject}
         submitting={rejectSubmitting}
+        error={rejectError}
       />
     </div>
   );
