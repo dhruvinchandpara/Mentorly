@@ -33,14 +33,12 @@ import {
 
 const ITEMS_PER_PAGE = 10;
 
-type SessionNoteInfo = {
-  bookingId: string;
-  sessionDate: string;
-  content: string;
-  lastEditedByName?: string | null;
-  lastEditedAt?: string | null;
-  isLocked: boolean;
-};
+type PriorSessionInfo = {
+  keyInsights: string | null;
+  studentActionables: string | null;
+  status: string;
+  postSessionSubmittedAt: string;
+} | null;
 
 type SessionInfo = {
   id: string;
@@ -54,7 +52,10 @@ type SessionInfo = {
   status: string;
   rejectionReason?: string | null;
   meetLink: string | null;
-  sessionNote?: SessionNoteInfo | null;
+  preWorkReason: string;
+  keyInsights: string | null;
+  studentActionables: string | null;
+  postSessionSubmittedAt: string | null;
 };
 
 export default function AdminSessions() {
@@ -85,24 +86,17 @@ export default function AdminSessions() {
           id, student_id, mentor_id,
           requested_date, requested_start_time, start_time, end_time,
           duration_minutes, actual_duration_minutes, status, rejection_reason, meet_link,
-          pre_work_reason, student_actionables, key_insights,
+          pre_work_reason, student_actionables, key_insights, post_session_submitted_at,
           student_profiles:profiles!sessions_student_id_fkey(full_name),
           mentor_profiles:profiles!sessions_mentor_id_fkey(full_name)
         `)
         .order('requested_date', { ascending: false })
-      
+
       if (!sessErr && sessData) {
         sessionsList = sessData.map((s: any) => ({
           ...s,
           start_time: s.start_time || (s.requested_date ? new Date(s.requested_date + 'T' + (s.requested_start_time || '00:00:00') + 'Z').toISOString() : null),
           mentor_profiles: s.mentor_profiles ? { profiles: s.mentor_profiles } : null,
-          session_notes: s.student_actionables ? [{
-            content: s.student_actionables,
-            is_locked: true,
-            last_edited_by: s.mentor_id,
-            last_edited_at: null,
-            editor_profile: null
-          }] : []
         }))
       } else {
         const { data: legacyData } = await supabase
@@ -139,16 +133,6 @@ export default function AdminSessions() {
                   : 'Unknown'
                 : 'Unknown';
 
-            const rawNote = Array.isArray(s.session_notes) && s.session_notes.length > 0 ? s.session_notes[0] : null;
-            const sessionNote: SessionNoteInfo | null = rawNote && rawNote.content ? {
-              bookingId: s.id,
-              sessionDate: s.start_time,
-              content: rawNote.content,
-              lastEditedByName: rawNote.editor_profile?.full_name || null,
-              lastEditedAt: rawNote.last_edited_at || null,
-              isLocked: !!rawNote.is_locked,
-            } : null;
-
             return {
               id: s.id || '',
               studentId: s.student_id || '',
@@ -161,7 +145,10 @@ export default function AdminSessions() {
               status: s.status || 'scheduled',
               rejectionReason: s.rejection_reason || null,
               meetLink: s.meet_link || null,
-              sessionNote,
+              preWorkReason: s.pre_work_reason || '',
+              keyInsights: s.key_insights || null,
+              studentActionables: s.student_actionables || null,
+              postSessionSubmittedAt: s.post_session_submitted_at || null,
             };
           })
         );
@@ -217,7 +204,7 @@ export default function AdminSessions() {
   const getSessionState = (session: SessionInfo) => {
     const start = new Date(session.startTime);
     const end = new Date(session.endTime);
-    if (session.status === 'pending') return 'pending';
+    if (session.status === 'pending' || session.status === 'requested') return 'pending';
     if (session.status === 'rejected') return 'rejected';
     if (session.status === 'completed') return 'completed';
     if (now >= start && now <= end && session.status === 'scheduled') return 'live';
@@ -328,7 +315,7 @@ export default function AdminSessions() {
         <div className="flex flex-wrap gap-2">
           {[
             { value: 'all', label: 'All' },
-            { value: 'pending', label: `Pending (${sessions.filter(s => s.status === 'pending').length})` },
+            { value: 'pending', label: `Pending (${sessions.filter(s => s.status === 'pending' || s.status === 'requested').length})` },
             { value: 'live', label: 'Live' },
             { value: 'upcoming', label: 'Upcoming' },
             { value: 'completed', label: 'Completed' },
