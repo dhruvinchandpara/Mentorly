@@ -274,7 +274,7 @@ export default function AdminSessions() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -282,14 +282,14 @@ export default function AdminSessions() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-[20px] border border-slate-200/60 shadow-sm p-6">
+      <div className="bg-white rounded-[20px] border border-border/60 shadow-sm p-6">
         <div className="flex items-center gap-4 mb-2">
           <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center">
             <Calendar className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-[28px] font-bold text-[#1e293b]">Sessions & Approvals</h1>
-            <p className="text-[#64748b] text-sm mt-1">
+            <h1 className="text-[28px] font-bold text-foreground">Sessions & Approvals</h1>
+            <p className="text-muted-foreground text-sm mt-1">
               Review session booking requests, approve meeting links, and manage sessions
             </p>
           </div>
@@ -301,14 +301,14 @@ export default function AdminSessions() {
         <div
           className={`p-4 rounded-xl flex items-center gap-3 ${
             feedback.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border border-rose-200'
+              ? 'bg-success-bg text-success border border-success'
+              : 'bg-[#F5E6DE] text-destructive border border-destructive'
           }`}
         >
           {feedback.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
           )}
           <p className="text-sm font-medium">{feedback.message}</p>
         </div>
@@ -317,12 +317,12 @@ export default function AdminSessions() {
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-faint)]" />
           <Input
             placeholder="Search by student or mentor name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-11 h-12 bg-white border-slate-200/60 rounded-[14px] text-[#1e293b] placeholder:text-[#94a3b8] focus-visible:ring-[#5b7cfa]/20 focus-visible:border-[#5b7cfa]"
+            className="pl-11 h-12 bg-white border-border/60 rounded-[14px] text-foreground placeholder:text-[var(--fg-faint)] focus-visible:ring-primary/20 focus-visible:border-primary"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -338,8 +338,8 @@ export default function AdminSessions() {
               onClick={() => setStatusFilter(filter.value)}
               className={`px-5 py-2.5 rounded-[14px] text-sm font-semibold transition-all ${
                 statusFilter === filter.value
-                  ? 'gradient-primary text-white'
-                  : 'bg-white text-[#64748b] border border-slate-200/60 hover:border-[#5b7cfa]/30 hover:text-[#5b7cfa]'
+                  ? 'bg-[#0F1919] text-[#FFFBF3]'
+                  : 'bg-white text-muted-foreground border border-border/60 hover:border-[#0F1919]/30 hover:text-[#0F1919]'
               }`}
             >
               {filter.label}
@@ -350,17 +350,17 @@ export default function AdminSessions() {
 
       {/* Pending Approvals Section */}
       {pendingSessions.length > 0 && (
-        <Card className="border-amber-200/80 shadow-sm bg-gradient-to-br from-amber-50/40 to-white rounded-[20px]">
-          <CardHeader className="pb-4 border-b border-amber-100">
+        <Card className="border-warning/80 shadow-sm bg-gradient-to-br from-warning-bg/40 to-white rounded-[20px]">
+          <CardHeader className="pb-4 border-b border-warning">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-[16px] bg-amber-100 flex items-center justify-center shadow-sm">
-                <Clock className="w-5 h-5 text-amber-600 animate-pulse" />
+              <div className="w-12 h-12 rounded-[16px] bg-warning-bg flex items-center justify-center shadow-sm">
+                <Clock className="w-5 h-5 text-warning animate-pulse" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold text-[#1e293b]">
+                <CardTitle className="text-lg font-semibold text-foreground">
                   Pending Session Approvals ({pendingSessions.length})
                 </CardTitle>
-                <p className="text-xs text-[#64748b] mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Approve to generate Google Meet links and confirm booking for student & mentor
                 </p>
               </div>
@@ -388,24 +388,24 @@ export default function AdminSessions() {
                 return (
                   <div
                     key={session.id}
-                    className="p-4 bg-white border border-amber-200/60 rounded-[16px] shadow-sm hover:shadow-md transition-all space-y-3"
+                    className="p-4 bg-white border border-warning/60 rounded-[16px] shadow-sm hover:shadow-md transition-all space-y-3"
                   >
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-[14px] bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <div className="w-12 h-12 rounded-[14px] bg-warning-bg text-warning flex items-center justify-center flex-shrink-0 shadow-sm">
                           <Clock className="w-5 h-5" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-[#1e293b]">
+                          <p className="text-sm font-semibold text-foreground">
                             {session.studentName}{' '}
-                            <span className="font-normal text-[#64748b]">requested session with</span>{' '}
+                            <span className="font-normal text-muted-foreground">requested session with</span>{' '}
                             {session.mentorName}
                           </p>
-                          <p className="text-xs text-[#64748b] mt-1 flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5 text-[#94a3b8]" />
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-[var(--fg-faint)]" />
                             <span>{formatDate(session.startTime)}</span>
                             <span>·</span>
-                            <Clock className="w-3.5 h-3.5 text-[#94a3b8]" />
+                            <Clock className="w-3.5 h-3.5 text-[var(--fg-faint)]" />
                             <span>
                               {formatTime(session.startTime)} – {formatTime(session.endTime)} ({session.duration} min)
                             </span>
@@ -417,15 +417,15 @@ export default function AdminSessions() {
                         <button
                           onClick={() => handleReject(session.id)}
                           disabled={isLoading}
-                          className="px-4 py-2 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 disabled:opacity-50 transition-all flex items-center gap-1.5"
+                          className="px-4 py-2 text-xs font-semibold text-white bg-[#BA3B41] hover:bg-[#A8343A] rounded-full disabled:opacity-50 shadow-sm transition-all flex items-center gap-1.5"
                         >
                           <X className="w-3.5 h-3.5" />
-                          Reject
+                          Reject session
                         </button>
                         <button
                           onClick={() => handleApprove(session.id)}
                           disabled={isLoading}
-                          className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-sm transition-all flex items-center gap-1.5"
+                          className="px-4 py-2 text-xs font-semibold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full disabled:opacity-50 shadow-sm transition-all flex items-center gap-1.5"
                         >
                           {isLoading ? (
                             <>
@@ -435,7 +435,7 @@ export default function AdminSessions() {
                           ) : (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              Approve Session
+                              Approve session
                             </>
                           )}
                         </button>
@@ -444,13 +444,13 @@ export default function AdminSessions() {
 
                     {/* Previous Session Notes Review Section */}
                     {priorNotes.length > 0 ? (
-                      <div className="pt-2 border-t border-slate-100">
+                      <div className="pt-2 border-t border-border">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-blue-600" />
+                          <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-primary" />
                             Previous Session Note ({priorNotes.length})
                           </span>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-[var(--fg-faint)]">
                             From meeting on {formatDate(priorNotes[0].sessionDate)}
                           </span>
                         </div>
@@ -464,16 +464,16 @@ export default function AdminSessions() {
                         />
                         {priorNotes.length > 1 && (
                           <details className="mt-2 text-xs">
-                            <summary className="cursor-pointer text-blue-600 font-medium hover:underline">
+                            <summary className="cursor-pointer text-primary font-medium hover:underline">
                               View {priorNotes.length - 1} older session note(s)
                             </summary>
-                            <div className="space-y-2 mt-2 pl-2 border-l-2 border-slate-200">
+                            <div className="space-y-2 mt-2 pl-2 border-l-2 border-border">
                               {priorNotes.slice(1).map((n) => (
-                                <div key={n.bookingId} className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                                  <div className="text-[11px] text-slate-500 font-medium mb-1">
+                                <div key={n.bookingId} className="bg-secondary p-2.5 rounded-lg border border-border">
+                                  <div className="text-[11px] text-[var(--fg-faint)] font-medium mb-1">
                                     Meeting on {formatDate(n.sessionDate)}
                                   </div>
-                                  <p className="text-xs text-slate-700 whitespace-pre-wrap">{n.content}</p>
+                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{n.content}</p>
                                 </div>
                               ))}
                             </div>
@@ -481,9 +481,9 @@ export default function AdminSessions() {
                         )}
                       </div>
                     ) : (
-                      <div className="pt-2 border-t border-slate-100">
-                        <div className="flex items-center gap-2 p-2.5 bg-amber-50/80 border border-amber-200/80 rounded-xl text-amber-800 text-xs font-medium">
-                          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <div className="pt-2 border-t border-border">
+                        <div className="flex items-center gap-2 p-2.5 bg-warning-bg/80 border border-warning/80 rounded-xl text-warning text-xs font-medium">
+                          <AlertCircle className="w-4 h-4 text-warning flex-shrink-0" />
                           <span>No previous session note found for this mentor-student pairing. Consider checking proof of work before approving.</span>
                         </div>
                       </div>
@@ -498,14 +498,14 @@ export default function AdminSessions() {
 
       {/* Live Sessions */}
       {liveSessions.length > 0 && (
-        <Card className="border-red-200/60 shadow-sm bg-gradient-to-br from-red-50/50 to-white rounded-[20px]">
-          <CardHeader className="pb-4 border-b border-red-100/50">
+        <Card className="border-destructive/60 shadow-sm bg-gradient-to-br from-[#F5E6DE]/50 to-white rounded-[20px]">
+          <CardHeader className="pb-4 border-b border-destructive/50">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-[16px] bg-red-100 flex items-center justify-center shadow-sm">
-                <Radio className="w-5 h-5 text-red-600 animate-pulse" />
+              <div className="w-12 h-12 rounded-[16px] bg-[#F5E6DE] flex items-center justify-center shadow-sm">
+                <Radio className="w-5 h-5 text-destructive animate-pulse" />
               </div>
-              <CardTitle className="text-lg font-semibold text-[#1e293b]">
-                Live Now <span className="text-[#64748b] font-normal">({liveSessions.length})</span>
+              <CardTitle className="text-lg font-semibold text-foreground">
+                Live Now <span className="text-muted-foreground font-normal">({liveSessions.length})</span>
               </CardTitle>
             </div>
           </CardHeader>
@@ -514,19 +514,19 @@ export default function AdminSessions() {
               {liveSessions.map((session) => (
                 <div
                   key={session.id}
-                  className="flex items-center justify-between p-4 bg-white border border-red-200/40 rounded-[16px] shadow-sm hover:shadow-md transition-all"
+                  className="flex items-center justify-between p-4 bg-white border border-destructive/40 rounded-[16px] shadow-sm hover:shadow-md transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-[14px] bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <div className="w-12 h-12 rounded-[14px] bg-[#F5E6DE] text-destructive flex items-center justify-center flex-shrink-0 shadow-sm">
                       <Video className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-[#1e293b]">
+                      <p className="text-sm font-semibold text-foreground">
                         {session.studentName}{' '}
-                        <span className="font-normal text-[#64748b]">with mentor</span>{' '}
+                        <span className="font-normal text-muted-foreground">with mentor</span>{' '}
                         {session.mentorName}
                       </p>
-                      <p className="text-xs text-[#94a3b8] mt-1 flex items-center gap-1.5">
+                      <p className="text-xs text-[var(--fg-faint)] mt-1 flex items-center gap-1.5">
                         <Clock className="w-3 h-3" />
                         {formatTime(session.startTime)} – {formatTime(session.endTime)} ·{' '}
                         {session.duration} min
@@ -545,43 +545,43 @@ export default function AdminSessions() {
 
       {/* Upcoming Sessions */}
       {upcomingSessions.length > 0 && (
-        <Card className="border-slate-200/60 shadow-sm rounded-[20px]">
-          <CardHeader className="pb-4 border-b border-slate-100/80">
-            <CardTitle className="text-lg font-semibold text-[#1e293b]">
+        <Card className="border-border/60 shadow-sm rounded-[20px]">
+          <CardHeader className="pb-4 border-b border-border/80">
+            <CardTitle className="text-lg font-semibold text-foreground">
               Upcoming Approved Sessions{' '}
-              <span className="text-[#64748b] font-normal">({upcomingSessions.length})</span>
+              <span className="text-muted-foreground font-normal">({upcomingSessions.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#fafbfc] hover:bg-[#fafbfc] border-b border-slate-100/80">
-                  <TableHead className="text-[#64748b] font-semibold text-sm">Student / Mentor</TableHead>
-                  <TableHead className="text-[#64748b] font-semibold text-sm">Date & Time</TableHead>
-                  <TableHead className="text-[#64748b] font-semibold text-sm">Duration</TableHead>
-                  <TableHead className="text-[#64748b] font-semibold text-sm text-right">Status</TableHead>
+                <TableRow className="bg-background hover:bg-background border-b border-border/80">
+                  <TableHead className="text-muted-foreground font-semibold text-sm">Student / Mentor</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold text-sm">Date & Time</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold text-sm">Duration</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold text-sm text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedUpcoming.map((session) => (
-                  <TableRow key={session.id} className="hover:bg-[#fafbfc] border-b border-slate-100/60">
+                  <TableRow key={session.id} className="hover:bg-background border-b border-border/60">
                     <TableCell>
-                      <p className="text-sm font-semibold text-[#1e293b]">{session.studentName}</p>
-                      <p className="text-xs text-[#94a3b8] mt-0.5">with {session.mentorName}</p>
+                      <p className="text-sm font-semibold text-foreground">{session.studentName}</p>
+                      <p className="text-xs text-[var(--fg-faint)] mt-0.5">with {session.mentorName}</p>
                     </TableCell>
-                    <TableCell className="text-sm text-[#475569]">
+                    <TableCell className="text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5 text-[#94a3b8]" />
+                        <Calendar className="w-3.5 h-3.5 text-[var(--fg-faint)]" />
                         <div>
                           <div className="font-medium">{formatDate(session.startTime)}</div>
-                          <div className="text-xs text-[#94a3b8] mt-0.5">
+                          <div className="text-xs text-[var(--fg-faint)] mt-0.5">
                             {formatTime(session.startTime)} – {formatTime(session.endTime)}
                           </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f1f5f9] text-[#475569] rounded-[10px] text-xs font-medium">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground rounded-[10px] text-xs font-medium">
                         <Clock className="w-3 h-3" />
                         {session.duration} min
                       </div>
@@ -598,15 +598,15 @@ export default function AdminSessions() {
 
             {/* Pagination */}
             {upcomingTotalPages > 1 && (
-              <div className="flex items-center justify-between p-6 border-t border-slate-100/80">
-                <p className="text-sm text-[#64748b]">
+              <div className="flex items-center justify-between p-6 border-t border-border/80">
+                <p className="text-sm text-muted-foreground">
                   Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, upcomingSessions.length)} of {upcomingSessions.length} sessions
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Previous
@@ -618,8 +618,8 @@ export default function AdminSessions() {
                         onClick={() => setCurrentPage(page)}
                         className={`w-10 h-10 text-sm font-medium rounded-[14px] transition-colors ${
                           currentPage === page
-                            ? 'gradient-primary text-white'
-                            : 'text-[#475569]'
+                            ? 'bg-[#0F1919] text-[#FFFBF3]'
+                            : 'text-muted-foreground'
                         }`}
                       >
                         {page}
@@ -629,7 +629,7 @@ export default function AdminSessions() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(upcomingTotalPages, p + 1))}
                     disabled={currentPage === pastTotalPages}
-                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
@@ -642,55 +642,55 @@ export default function AdminSessions() {
       )}
 
       {/* Past & Rejected Sessions */}
-      <Card className="border-slate-200/60 shadow-sm rounded-[20px]">
-        <CardHeader className="pb-4 border-b border-slate-100/80">
-          <CardTitle className="text-lg font-semibold text-[#1e293b]">
+      <Card className="border-border/60 shadow-sm rounded-[20px]">
+        <CardHeader className="pb-4 border-b border-border/80">
+          <CardTitle className="text-lg font-semibold text-foreground">
             Past & Rejected Sessions{' '}
-            <span className="text-[#64748b] font-normal">({pastSessions.length})</span>
+            <span className="text-muted-foreground font-normal">({pastSessions.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {pastSessions.length === 0 ? (
             <div className="py-12 text-center">
-              <div className="w-16 h-16 bg-[#f1f5f9] rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-[#94a3b8]" />
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-[var(--fg-faint)]" />
               </div>
-              <p className="text-[#64748b]">No past or rejected sessions found</p>
+              <p className="text-muted-foreground">No past or rejected sessions found</p>
             </div>
           ) : (
             <>
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[#fafbfc] hover:bg-[#fafbfc] border-b border-slate-100/80">
-                    <TableHead className="text-[#64748b] font-semibold text-sm">Student / Mentor</TableHead>
-                    <TableHead className="text-[#64748b] font-semibold text-sm">Date & Time</TableHead>
-                    <TableHead className="text-[#64748b] font-semibold text-sm">Duration</TableHead>
-                    <TableHead className="text-[#64748b] font-semibold text-sm text-right">Status</TableHead>
+                  <TableRow className="bg-background hover:bg-background border-b border-border/80">
+                    <TableHead className="text-muted-foreground font-semibold text-sm">Student / Mentor</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold text-sm">Date & Time</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold text-sm">Duration</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold text-sm text-right">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedPast.map((session) => (
                     <TableRow
                       key={session.id}
-                      className="hover:bg-[#fafbfc] border-b border-slate-100/60 last:border-0"
+                      className="hover:bg-background border-b border-border/60 last:border-0"
                     >
                       <TableCell>
-                        <p className="text-sm font-semibold text-[#1e293b]">{session.studentName}</p>
-                        <p className="text-xs text-[#94a3b8] mt-0.5">with {session.mentorName}</p>
+                        <p className="text-sm font-semibold text-foreground">{session.studentName}</p>
+                        <p className="text-xs text-[var(--fg-faint)] mt-0.5">with {session.mentorName}</p>
                       </TableCell>
-                      <TableCell className="text-sm text-[#475569]">
+                      <TableCell className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-[#94a3b8]" />
+                          <Calendar className="w-3.5 h-3.5 text-[var(--fg-faint)]" />
                           <div>
                             <div className="font-medium">{formatDate(session.startTime)}</div>
-                            <div className="text-xs text-[#94a3b8] mt-0.5">
+                            <div className="text-xs text-[var(--fg-faint)] mt-0.5">
                               {formatTime(session.startTime)} – {formatTime(session.endTime)}
                             </div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f1f5f9] text-[#475569] rounded-[10px] text-xs font-medium">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground rounded-[10px] text-xs font-medium">
                           <Clock className="w-3 h-3" />
                           {session.duration} min
                         </div>
@@ -702,7 +702,7 @@ export default function AdminSessions() {
                           </StatusBadge>
                         ) : (
                           <StatusBadge
-                            variant={getSessionState(session) === 'completed' ? 'completed' : 'inactive'}
+                            variant={getSessionState(session) === 'completed' ? 'completed' : 'upcoming'}
                             size="sm"
                           >
                             {getSessionState(session) === 'completed' ? 'Completed' : 'Scheduled'}
@@ -716,15 +716,15 @@ export default function AdminSessions() {
 
               {/* Pagination */}
               {pastTotalPages > 1 && (
-                <div className="flex items-center justify-between p-6 border-t border-slate-100/80">
-                  <p className="text-sm text-[#64748b]">
+                <div className="flex items-center justify-between p-6 border-t border-border/80">
+                  <p className="text-sm text-muted-foreground">
                     Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, pastSessions.length)} of {pastSessions.length} sessions
                   </p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                       Previous
@@ -737,7 +737,7 @@ export default function AdminSessions() {
                           className={`w-10 h-10 text-sm font-medium rounded-[14px] transition-colors ${
                             currentPage === page
                               ? 'gradient-primary text-white'
-                              : 'text-[#475569]'
+                              : 'text-muted-foreground'
                           }`}
                         >
                           {page}
@@ -747,7 +747,7 @@ export default function AdminSessions() {
                     <button
                       onClick={() => setCurrentPage(p => Math.min(pastTotalPages, p + 1))}
                       disabled={currentPage === pastTotalPages}
-                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#475569] bg-white border border-slate-200/60 rounded-[14px] hover:bg-[#fafbfc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Next
                       <ChevronRight className="w-4 h-4" />
