@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   CheckCircle2, Clock, Calendar, Video, Radio,
   Loader2, Search, AlertCircle, ExternalLink, BookOpen, User, X, ChevronLeft, ChevronRight
@@ -60,6 +61,15 @@ export default function SessionsPage() {
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 30_000)
     return () => clearInterval(id)
+  }, [])
+
+  // Initialize activeTab from search params
+  useEffect(() => {
+    const searchParams = useSearchParams()
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'upcoming' || tabParam === 'pending' || tabParam === 'history') {
+      setActiveTab(tabParam as TabType)
+    }
   }, [])
 
   const fetchSessions = useCallback(async () => {
