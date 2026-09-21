@@ -25,7 +25,7 @@ vi.mock('@/lib/google-oauth', () => ({
   },
 }))
 
-import { rejectBooking } from './actions'
+import { rejectBooking, sendSessionForRevision } from './actions'
 
 describe('rejectBooking validation', () => {
   it('rejects an empty reason without touching the database', async () => {
@@ -39,6 +39,22 @@ describe('rejectBooking validation', () => {
     const result = await rejectBooking('session-1', '   ')
     expect(result.success).toBe(false)
     expect(result.error).toMatch(/reason/i)
+    expect(createAdminClientMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('sendSessionForRevision validation', () => {
+  it('rejects an empty reason without touching the database', async () => {
+    const result = await sendSessionForRevision('session-1', '', 'admin-1')
+    expect(result.success).toBe(false)
+    expect(result.success === false && result.error).toMatch(/revision reason/i)
+    expect(createAdminClientMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects a whitespace-only reason without touching the database', async () => {
+    const result = await sendSessionForRevision('session-1', '   ', 'admin-1')
+    expect(result.success).toBe(false)
+    expect(result.success === false && result.error).toMatch(/revision reason/i)
     expect(createAdminClientMock).not.toHaveBeenCalled()
   })
 })

@@ -3,7 +3,7 @@
 import { createAdminClient, getAdminUserId } from '@/lib/supabase/admin'
 import { createGoogleMeetingWithOAuth } from '@/lib/google-calendar-oauth'
 import { isGoogleConnected } from '@/lib/google-oauth'
-import { validateRejectionReason } from '@/lib/booking-validation'
+import { validateRejectionReason, validateRevisionReason } from '@/lib/booking-validation'
 
 export type CreateMentorInput = {
  fullName: string
@@ -680,6 +680,83 @@ export async function lockSessionNote(bookingId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unexpected error.',
+    }
+  }
+}
+
+// ── Post-Session Review ──────────────────────────────────────────────────────
+
+export async function approvePostSession(sessionId: string) {
+  try {
+    const supabase = createAdminClient()
+
+    const { data: session, error: fetchErr } = await supabase
+      .from('sessions')
+      .select('id, status')
+      .eq('id', sessionId)
+      .single()
+
+    if (fetchErr || !session) {
+      return { success: false, error: 'Session not found.' }
+    }
+
+    if (session.status !== 'awaiting_post_review') {
+      return {
+        success: false,
+        error: `Session is not awaiting post-session review (current status: ${session.status}).`,
+      }
+    }
+
+    const { error: updateErr } = await supabase
+      .from('sessions')
+      .update({ status: 'completed' })
+      .eq('id', sessionId)
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('approvePostSession error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred.',
+    }
+  }
+}
+
+/**
+ * Sends a submitted post-session report back to the mentor for revision.
+ * Only inserts into session_revisions — the on_session_revision_created trigger
+ * (reset_reminder_on_revision()) is what flips sessions.status to 'revise' and
+ * resets revision_requested_at/last_reminder_sent_at. Do not set status here.
+ */
+export async function sendSessionForRevision(sessionId: string, reason: string, adminId: string) {
+  const validation = validateRevisionReason(reason)
+  if (!validation.valid) {
+    return { success: false, error: validation.error }
+  }
+
+  try {
+    const supabase = createAdminClient()
+
+    const { error: insertErr } = await supabase.from('session_revisions').insert({
+      session_id: sessionId,
+      reason: reason.trim(),
+      requested_by_admin_id: adminId,
+    })
+
+    if (insertErr) {
+      return { success: false, error: insertErr.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('sendSessionForRevision error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred.',
     }
   }
 }
