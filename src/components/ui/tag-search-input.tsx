@@ -28,10 +28,6 @@ export function TagSearchInput({
   const suggestions = getNameSuggestions(names, query, selected);
 
   useEffect(() => {
-    setHighlightedIndex(0);
-  }, [query]);
-
-  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -44,6 +40,7 @@ export function TagSearchInput({
   const addTag = (name: string) => {
     onChange([...selected, name]);
     setQuery('');
+    setHighlightedIndex(0);
     setOpen(false);
   };
 
@@ -91,6 +88,7 @@ export function TagSearchInput({
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
+            setHighlightedIndex(0);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
