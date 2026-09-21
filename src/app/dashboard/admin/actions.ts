@@ -741,6 +741,23 @@ export async function sendSessionForRevision(sessionId: string, reason: string, 
   try {
     const supabase = createAdminClient()
 
+    const { data: session, error: fetchErr } = await supabase
+      .from('sessions')
+      .select('id, status')
+      .eq('id', sessionId)
+      .single()
+
+    if (fetchErr || !session) {
+      return { success: false, error: 'Session not found.' }
+    }
+
+    if (session.status !== 'awaiting_post_review') {
+      return {
+        success: false,
+        error: `Session is not awaiting post-session review (current status: ${session.status}).`,
+      }
+    }
+
     const { error: insertErr } = await supabase.from('session_revisions').insert({
       session_id: sessionId,
       reason: reason.trim(),

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, ChevronDown, Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react'
 import { validatePostSessionForm } from '@/lib/booking-validation'
 import { submitPostSessionForm } from '@/app/actions/post-session'
 
@@ -33,6 +33,7 @@ export function PostSessionForm({ sessionId, mentorId, initial, revisions = [], 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   const durationValue = Number(actualDurationMinutes)
   const validation = validatePostSessionForm({
@@ -65,10 +66,20 @@ export function PostSessionForm({ sessionId, mentorId, initial, revisions = [], 
     })
     setSubmitting(false)
     if (res.success) {
+      setSubmitted(true)
       onSubmitted()
     } else {
       setError(res.error || 'Failed to submit session report.')
     }
+  }
+
+  if (submitted) {
+    return (
+      <div className="p-4 rounded-xl flex items-center gap-3 bg-success-bg text-success border border-success">
+        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+        <p className="text-sm font-medium">Submitted for review</p>
+      </div>
+    )
   }
 
   return (

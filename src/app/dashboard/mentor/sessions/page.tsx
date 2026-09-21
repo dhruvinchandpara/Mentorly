@@ -157,6 +157,9 @@ export default function SessionsPage() {
 
   const historySessions = sessions.filter(s => s.status === 'completed')
 
+  // Submitted and waiting on the admin — read-only, shown alongside "To Submit".
+  const awaitingReviewSessions = sessions.filter(s => s.status === 'awaiting_post_review')
+
   // Apply search filter
   const filterBySearch = (rows: SessionRow[]) => {
     if (!searchQuery) return rows
@@ -168,6 +171,7 @@ export default function SessionsPage() {
   const filteredUpcoming = filterBySearch(upcomingSessions)
   const filteredToSubmit = filterBySearch(toSubmitSessions)
   const filteredHistory = filterBySearch(historySessions)
+  const filteredAwaitingReview = filterBySearch(awaitingReviewSessions)
 
   // Reset to page 1 when changing tabs or search
   useEffect(() => {
@@ -637,6 +641,48 @@ export default function SessionsPage() {
                   </div>
                 )}
               </>
+            )}
+
+            {filteredAwaitingReview.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-border space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Awaiting admin review</h3>
+                <div className="space-y-3">
+                  {filteredAwaitingReview.map(session => {
+                    const studentName = session.student?.full_name || 'Unknown Student'
+                    return (
+                      <div key={session.id} className="p-4 bg-card border border-border rounded-lg">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setSelectedStudent(session)}
+                              className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm hover:bg-accent transition-colors cursor-pointer"
+                            >
+                              {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                            </button>
+                            <div>
+                              <button
+                                onClick={() => setSelectedStudent(session)}
+                                className="text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
+                              >
+                                {studentName}
+                              </button>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(session.start_time)}
+                                <Clock className="w-3 h-3 ml-2" />
+                                {formatTime(session.start_time)} – {formatTime(session.end_time)}
+                              </p>
+                            </div>
+                          </div>
+                          <StatusBadge variant="pending" size="sm">
+                            Awaiting review
+                          </StatusBadge>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
