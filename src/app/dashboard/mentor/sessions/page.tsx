@@ -47,6 +47,7 @@ type TabType = 'upcoming' | 'pending' | 'history'
 
 export default function SessionsPage() {
   const { profile, supabase } = useAuth()
+  const searchParams = useSearchParams()
   const [sessions, setSessions] = useState<SessionRow[]>([])
   const [revisionsBySession, setRevisionsBySession] = useState<Record<string, RevisionRow[]>>({})
   const [loading, setLoading] = useState(true)
@@ -65,12 +66,11 @@ export default function SessionsPage() {
 
   // Initialize activeTab from search params
   useEffect(() => {
-    const searchParams = useSearchParams()
     const tabParam = searchParams.get('tab')
     if (tabParam === 'upcoming' || tabParam === 'pending' || tabParam === 'history') {
       setActiveTab(tabParam as TabType)
     }
-  }, [])
+  }, [searchParams])
 
   const fetchSessions = useCallback(async () => {
     if (!profile?.id) return
