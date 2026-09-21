@@ -25,8 +25,7 @@ function getSessionState(startTime: string, endTime: string) {
 
 export default function MentorDashboard() {
   const { profile } = useAuth()
-  const { data: bookings = [], isLoading: loading, markComplete, isMarkingComplete } = useMentorBookings()
-  const [markingCompleteId, setMarkingCompleteId] = useState<string | null>(null)
+  const { data: bookings = [], isLoading: loading } = useMentorBookings()
   const [, setTick] = useState(0)
 
   // Tick to refresh session states
@@ -35,18 +34,6 @@ export default function MentorDashboard() {
     return () => clearInterval(id)
   }, [])
 
-  const markCompleted = async (bookingId: string) => {
-    setMarkingCompleteId(bookingId)
-    try {
-      markComplete(bookingId)
-    } catch (err: any) {
-      console.error('Error marking completed:', err)
-      alert(`Failed to update booking status: ${err.message || 'Unknown error'}`)
-    } finally {
-      // Reset after a delay to allow the mutation to complete
-      setTimeout(() => setMarkingCompleteId(null), 1000)
-    }
-  }
 
   // Categorize bookings
   const liveBookings = bookings.filter(b =>
@@ -58,8 +45,8 @@ export default function MentorDashboard() {
   const upcomingBookings = bookings.filter(b =>
     b.status === 'scheduled' && getSessionState(b.start_time, b.end_time) === 'upcoming'
   ).slice(0, 5)
-  const pendingCompletionBookings = bookings.filter(b =>
-    b.status === 'scheduled' && getSessionState(b.start_time, b.end_time) === 'past'
+  const sessionsNeedingReportBookings = bookings.filter(b =>
+    (b.status === 'scheduled' && getSessionState(b.start_time, b.end_time) === 'past') || b.status === 'revise'
   )
 
   const totalSessions = bookings.length
@@ -208,7 +195,7 @@ export default function MentorDashboard() {
       )}
 
       {/* Upcoming Sessions and Mark as Completed - Side by Side */}
-      <div className={`grid gap-4 ${pendingCompletionBookings.length > 0 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid gap-4 ${sessionsNeedingReportBookings.length > 0 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
         {/* Upcoming Sessions */}
         <Card>
           <CardHeader className="pb-4">
@@ -252,24 +239,24 @@ export default function MentorDashboard() {
           </CardContent>
         </Card>
 
-        {/* Sessions Needing Review - Mark as Completed */}
-        {pendingCompletionBookings.length > 0 && (
+        {/* Sessions Needing a Report */}
+        {sessionsNeedingReportBookings.length > 0 && (
           <Card className="border-warning/30 bg-warning-bg/30">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-warning" />
-                  <CardTitle className="text-base font-semibold text-foreground">Mark as Completed</CardTitle>
+                  <CardTitle className="text-base font-semibold text-foreground">Session Reports Needed</CardTitle>
                 </div>
                 <Badge variant="secondary" className="bg-warning-bg text-warning border-warning/30">
-                  {pendingCompletionBookings.length} to review
+                  {sessionsNeedingReportBookings.length} to submit
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 mb-4">
-                {pendingCompletionBookings.slice(0, 3).map((booking) => (
-                  <div key={booking.id} className="flex flex-col gap-3 p-4 bg-card border border-warning/30 rounded-lg">
+                {sessionsNeedingReportBookings.slice(0, 3).map((booking) => (
+                  <div key={booking.id} className="flex items-center justify-between gap-3 p-4 bg-card border border-warning/30 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-warning-bg text-warning flex items-center justify-center font-bold text-sm flex-shrink-0">
                         {booking.profiles.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
@@ -281,28 +268,19 @@ export default function MentorDashboard() {
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => markCompleted(booking.id)}
-                      disabled={markingCompleteId === booking.id}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#0F1919] hover:bg-[#1C2C2C] disabled:opacity-60 text-[#FFFBF3] rounded-full text-sm font-medium transition-colors"
-                    >
-                      {markingCompleteId === booking.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4" />
-                      )}
-                      Mark Completed
-                    </button>
+                    {booking.status === 'revise' && (
+                      <StatusBadge variant="revise" size="sm">
+                        Needs revision
+                      </StatusBadge>
+                    )}
                   </div>
                 ))}
               </div>
-              
-              {pendingCompletionBookings.length > 3 && (
-                <Link href="/dashboard/mentor/sessions?tab=pending" className="btn-secondary w-full justify-center">
-                  View {pendingCompletionBookings.length - 3} more awaiting review
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              )}
+
+              <Link href="/dashboard/mentor/sessions?tab=pending" className="btn-secondary w-full justify-center">
+                Fill in session reports
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
             </CardContent>
           </Card>
         )}
