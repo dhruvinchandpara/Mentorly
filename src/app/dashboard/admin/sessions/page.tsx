@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { approveBooking, rejectBooking } from '@/app/dashboard/admin/actions';
+import { approveBooking, rejectBooking, approvePostSession, sendSessionForRevision } from '@/app/dashboard/admin/actions';
 import {
   Clock,
   Loader2,
@@ -16,6 +16,8 @@ import {
   Check,
   X,
   AlertCircle,
+  RotateCcw,
+  BookOpen,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -29,6 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { RejectReasonModal } from '@/components/ui/reject-reason-modal';
+import { RevisionReasonModal } from '@/components/ui/revision-reason-modal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -48,17 +51,19 @@ type SessionInfo = {
   startTime: string;
   endTime: string;
   duration: number;
+  actualDurationMinutes: number | null;
   status: string;
   rejectionReason?: string | null;
   meetLink: string | null;
   preWorkReason: string;
   keyInsights: string | null;
   studentActionables: string | null;
+  adminFeedbackNote: string | null;
   postSessionSubmittedAt: string | null;
 };
 
 export default function AdminSessions() {
-  const { supabase, loading: authLoading } = useAuth();
+  const { supabase, profile, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +74,9 @@ export default function AdminSessions() {
   const [rejectModalSessionId, setRejectModalSessionId] = useState<string | null>(null);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [rejectError, setRejectError] = useState<string | null>(null);
+  const [reviseModalSessionId, setReviseModalSessionId] = useState<string | null>(null);
+  const [reviseSubmitting, setReviseSubmitting] = useState(false);
+  const [reviseError, setReviseError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading) fetchSessions();
@@ -88,7 +96,7 @@ export default function AdminSessions() {
           id, student_id, mentor_id,
           requested_date, requested_start_time, start_time, end_time,
           duration_minutes, actual_duration_minutes, status, rejection_reason, meet_link,
-          pre_work_reason, student_actionables, key_insights, post_session_submitted_at,
+          pre_work_reason, student_actionables, key_insights, admin_feedback_note, post_session_submitted_at,
           student_profiles:profiles!bookings_student_id_fkey(full_name),
           mentor_profiles:profiles!sessions_mentor_id_fkey(full_name)
         `)
@@ -143,12 +151,14 @@ export default function AdminSessions() {
               startTime: s.start_time || new Date().toISOString(),
               endTime: s.end_time || new Date().toISOString(),
               duration: typeof s.duration_minutes === 'number' ? s.duration_minutes : 60,
+              actualDurationMinutes: typeof s.actual_duration_minutes === 'number' ? s.actual_duration_minutes : null,
               status: s.status || 'scheduled',
               rejectionReason: s.rejection_reason || null,
               meetLink: s.meet_link || null,
               preWorkReason: s.pre_work_reason || '',
               keyInsights: s.key_insights || null,
               studentActionables: s.student_actionables || null,
+              adminFeedbackNote: s.admin_feedback_note || null,
               postSessionSubmittedAt: s.post_session_submitted_at || null,
             };
           })
@@ -214,6 +224,57 @@ export default function AdminSessions() {
     }
   };
 
+  const handleApprovePostSession = async (sessionId: string) => {
+    setActionLoading((prev) => ({ ...prev, [sessionId]: true }));
+    setFeedback(null);
+    try {
+      const res = await approvePostSession(sessionId);
+      if (res.success) {
+        setFeedback({ type: 'success', message: 'Session approved and marked completed.' });
+        await fetchSessions();
+      } else {
+        setFeedback({ type: 'error', message: res.error || 'Failed to approve session.' });
+      }
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'An error occurred during approval.' });
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [sessionId]: false }));
+    }
+  };
+
+  const openReviseModal = (sessionId: string) => {
+    setReviseError(null);
+    setReviseModalSessionId(sessionId);
+  };
+
+  const closeReviseModal = () => {
+    if (reviseSubmitting) return;
+    setReviseModalSessionId(null);
+  };
+
+  const handleConfirmRevise = async (reason: string) => {
+    const sessionId = reviseModalSessionId;
+    if (!sessionId || !profile?.id) return;
+
+    setReviseSubmitting(true);
+    setFeedback(null);
+    setReviseError(null);
+    try {
+      const res = await sendSessionForRevision(sessionId, reason, profile.id);
+      if (res.success) {
+        setFeedback({ type: 'success', message: 'Session sent back for revision.' });
+        setReviseModalSessionId(null);
+        await fetchSessions();
+      } else {
+        setReviseError(res.error || 'Failed to send session for revision.');
+      }
+    } catch (err: any) {
+      setReviseError(err.message || 'An error occurred while sending for revision.');
+    } finally {
+      setReviseSubmitting(false);
+    }
+  };
+
   const now = new Date();
 
   const getSessionState = (session: SessionInfo) => {
@@ -222,6 +283,8 @@ export default function AdminSessions() {
     if (session.status === 'pending' || session.status === 'requested') return 'pending';
     if (session.status === 'rejected') return 'rejected';
     if (session.status === 'completed') return 'completed';
+    if (session.status === 'awaiting_post_review') return 'awaiting_post_review';
+    if (session.status === 'revise') return 'revise';
     if (now >= start && now <= end && session.status === 'scheduled') return 'live';
     if (start > now && session.status === 'scheduled') return 'upcoming';
     return session.status;
@@ -249,14 +312,13 @@ export default function AdminSessions() {
   });
 
   const pendingSessions = filteredSessions.filter((s) => getSessionState(s) === 'pending');
+  const postSessionReviewSessions = filteredSessions.filter((s) => getSessionState(s) === 'awaiting_post_review');
   const liveSessions = filteredSessions.filter((s) => getSessionState(s) === 'live');
   const upcomingSessions = filteredSessions.filter((s) => getSessionState(s) === 'upcoming');
-  const pastSessions = filteredSessions.filter(
-    (s) =>
-      getSessionState(s) === 'completed' ||
-      getSessionState(s) === 'rejected' ||
-      (getSessionState(s) !== 'pending' && getSessionState(s) !== 'live' && getSessionState(s) !== 'upcoming')
-  );
+  const pastSessions = filteredSessions.filter((s) => {
+    const state = getSessionState(s);
+    return state !== 'pending' && state !== 'awaiting_post_review' && state !== 'live' && state !== 'upcoming';
+  });
 
   // Pagination logic
   const getCurrentPageData = (data: SessionInfo[]) => {
@@ -331,6 +393,7 @@ export default function AdminSessions() {
           {[
             { value: 'all', label: 'All' },
             { value: 'pending', label: `Pending (${sessions.filter(s => s.status === 'pending' || s.status === 'requested').length})` },
+            { value: 'awaiting_post_review', label: `Post-Session Review (${sessions.filter(s => s.status === 'awaiting_post_review').length})` },
             { value: 'live', label: 'Live' },
             { value: 'upcoming', label: 'Upcoming' },
             { value: 'completed', label: 'Completed' },
@@ -489,6 +552,105 @@ export default function AdminSessions() {
                         </div>
                       </div>
                     )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Post-Session Review Section */}
+      {postSessionReviewSessions.length > 0 && (
+        <Card className="border-[#0F1919]/10 shadow-sm bg-gradient-to-br from-[#FBF7D9]/50 to-white rounded-[20px]">
+          <CardHeader className="pb-4 border-b border-[#0F1919]/10">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-[16px] bg-[#FBF7D9] flex items-center justify-center shadow-sm">
+                <BookOpen className="w-5 h-5 text-[#0F1919]" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold text-foreground">
+                  Post-Session Review ({postSessionReviewSessions.length})
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Review the mentor&apos;s submitted session report, then approve or send it back for revision
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="space-y-3">
+              {postSessionReviewSessions.map((session) => {
+                const isLoading = actionLoading[session.id] || false;
+                return (
+                  <div
+                    key={session.id}
+                    className="p-4 bg-white border border-[#0F1919]/10 rounded-[16px] shadow-sm hover:shadow-md transition-all space-y-3"
+                  >
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          {session.mentorName}{' '}
+                          <span className="font-normal text-muted-foreground">submitted a report for the session with</span>{' '}
+                          {session.studentName}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-[var(--fg-faint)]" />
+                          <span>{formatDate(session.startTime)}</span>
+                          <span>·</span>
+                          <Clock className="w-3.5 h-3.5 text-[var(--fg-faint)]" />
+                          <span>
+                            Scheduled {session.duration} min
+                            {session.actualDurationMinutes != null ? ` · Actual ${session.actualDurationMinutes} min` : ''}
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                        <button
+                          onClick={() => openReviseModal(session.id)}
+                          disabled={isLoading}
+                          className="px-4 py-2 text-xs font-semibold text-[#0F1919] bg-white border border-[#0F1919]/20 hover:bg-[var(--peach-beige)]/25 rounded-full disabled:opacity-50 shadow-sm transition-all flex items-center gap-1.5"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-[#DFA396]" />
+                          Send back for revision
+                        </button>
+                        <button
+                          onClick={() => handleApprovePostSession(session.id)}
+                          disabled={isLoading}
+                          className="px-4 py-2 text-xs font-semibold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full disabled:opacity-50 shadow-sm transition-all flex items-center gap-1.5"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              Approving...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              Approve session
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <div>
+                        <p className="text-[11px] font-semibold text-muted-foreground">Key insights</p>
+                        <p className="text-sm text-foreground">{session.keyInsights}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-muted-foreground">Student actionables</p>
+                        <p className="text-sm text-foreground">{session.studentActionables}</p>
+                      </div>
+                      {session.adminFeedbackNote && (
+                        <div>
+                          <p className="text-[11px] font-semibold text-muted-foreground">Note to admin</p>
+                          <p className="text-sm text-foreground">{session.adminFeedbackNote}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -701,6 +863,10 @@ export default function AdminSessions() {
                           <StatusBadge variant="rejected" size="sm">
                             Rejected
                           </StatusBadge>
+                        ) : session.status === 'revise' ? (
+                          <StatusBadge variant="revise" size="sm">
+                            Needs revision
+                          </StatusBadge>
                         ) : (
                           <StatusBadge
                             variant={getSessionState(session) === 'completed' ? 'completed' : 'upcoming'}
@@ -769,6 +935,16 @@ export default function AdminSessions() {
         onConfirm={handleConfirmReject}
         submitting={rejectSubmitting}
         error={rejectError}
+      />
+
+      <RevisionReasonModal
+        open={reviseModalSessionId !== null}
+        onOpenChange={(open) => {
+          if (!open) closeReviseModal();
+        }}
+        onConfirm={handleConfirmRevise}
+        submitting={reviseSubmitting}
+        error={reviseError}
       />
     </div>
   );
