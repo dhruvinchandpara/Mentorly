@@ -29,10 +29,10 @@ export default function DashboardPage() {
  }, [user, profile, loading, router])
 
  return (
- <div className="min-h-screen flex items-center justify-center bg-slate-50 ">
+ <div className="min-h-screen flex items-center justify-center bg-background ">
  <div className="text-center">
- <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
- <h2 className="text-xl font-semibold text-blue-950 ">Loading your dashboard...</h2>
+ <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+ <h2 className="text-xl font-semibold text-foreground ">Loading your dashboard...</h2>
  </div>
  </div>
  )

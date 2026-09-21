@@ -13,19 +13,25 @@ const badgeVariants = cva(
   'inline-flex items-center gap-1.5 px-3 py-1 rounded-[10px] text-xs font-semibold transition-all shadow-sm',
   {
     variants: {
+      // Mesa status-badge palette (see .claude/skills/mentorly-ui-ux §4):
+      // Requested/Awaiting -> pale lemon tint + deep-teal-black text
+      // Scheduled/Completed/Approved -> cream-butter + deep-teal-black text
+      // Rejected -> pale crimson tint + dark-maroon text
+      // Revise -> peach-beige + dark-maroon text
       variant: {
-        active: 'bg-emerald-50 text-emerald-600 border border-emerald-200/60',
-        pending: 'bg-amber-50 text-amber-600 border border-amber-200/60',
-        inactive: 'bg-slate-100 text-slate-600 border border-slate-200/60',
-        live: 'bg-red-50 text-red-600 border border-red-200/60',
-        completed: 'bg-emerald-50 text-emerald-600 border border-emerald-200/60',
-        cancelled: 'bg-slate-100 text-slate-500 border border-slate-200/60',
-        rejected: 'bg-rose-50 text-rose-600 border border-rose-200/60',
-        upcoming: 'bg-blue-50 text-[#5b7cfa] border border-blue-200/60',
-        success: 'bg-emerald-50 text-emerald-600 border border-emerald-200/60',
-        warning: 'bg-amber-50 text-amber-600 border border-amber-200/60',
-        error: 'bg-red-50 text-red-600 border border-red-200/60',
-        info: 'bg-blue-50 text-[#5b7cfa] border border-blue-200/60',
+        active: 'bg-[#FBF4D7] text-[#0F1919] border border-[#0F1919]/10',
+        pending: 'bg-[#FBF7D9] text-[#0F1919] border border-[#0F1919]/10',
+        inactive: 'bg-muted text-muted-foreground border border-border',
+        live: 'bg-[#FBF4D7] text-[#0F1919] border border-[#0F1919]/10',
+        completed: 'bg-[#FBF4D7] text-[#0F1919] border border-[#0F1919]/10',
+        cancelled: 'bg-[#F7E2E3] text-[#702327] border border-[#702327]/15',
+        rejected: 'bg-[#F7E2E3] text-[#702327] border border-[#702327]/15',
+        revise: 'bg-[var(--peach-beige)] text-[#702327] border border-[#702327]/15',
+        upcoming: 'bg-[#FBF4D7] text-[#0F1919] border border-[#0F1919]/10',
+        success: 'bg-[#FBF4D7] text-[#0F1919] border border-[#0F1919]/10',
+        warning: 'bg-[#FBF7D9] text-[#0F1919] border border-[#0F1919]/10',
+        error: 'bg-[#F7E2E3] text-[#702327] border border-[#702327]/15',
+        info: 'bg-info-bg text-info border border-info/20',
       },
       size: {
         sm: 'text-[10px] px-2 py-0.5 gap-1',
@@ -60,6 +66,7 @@ const iconMap = {
   completed: CheckCircle2,
   cancelled: XCircle,
   rejected: XCircle,
+  revise: AlertCircle,
   upcoming: Clock,
   success: CheckCircle2,
   warning: AlertCircle,
@@ -125,7 +132,7 @@ export function LoadingBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200',
+        'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-info-bg text-info border border-info/20',
         className
       )}
       {...props}

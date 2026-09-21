@@ -130,7 +130,7 @@ export default function PaymentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -139,8 +139,8 @@ export default function PaymentsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Payments</h1>
-        <p className="text-slate-600 text-sm mt-1.5">
+        <h1 className="text-3xl font-display font-semibold text-foreground tracking-tight">Payments</h1>
+        <p className="text-muted-foreground text-sm mt-1.5">
           Track your earnings and payment history.
         </p>
       </div>
@@ -149,16 +149,16 @@ export default function PaymentsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="hover-lift">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Current Month Earnings</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Current Month Earnings</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-slate-900">₹{Math.round(currentMonthEarnings).toLocaleString('en-IN')}</p>
-                <p className="text-xs text-slate-500 mt-1">From {currentMonthBookings.length} sessions</p>
+                <p className="text-3xl font-bold text-foreground">₹{Math.round(currentMonthEarnings).toLocaleString('en-IN')}</p>
+                <p className="text-xs text-[var(--fg-faint)] mt-1">From {currentMonthBookings.length} sessions</p>
               </div>
             </div>
           </CardContent>
@@ -166,16 +166,16 @@ export default function PaymentsPage() {
 
         <Card className="hover-lift">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Earned</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Earned</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-emerald-600" />
+              <div className="w-12 h-12 rounded-lg bg-success-bg flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-success" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-slate-900">₹{Math.round(totalEarned).toLocaleString('en-IN')}</p>
-                <p className="text-xs text-slate-500 mt-1">Since joining</p>
+                <p className="text-3xl font-bold text-foreground">₹{Math.round(totalEarned).toLocaleString('en-IN')}</p>
+                <p className="text-xs text-[var(--fg-faint)] mt-1">Since joining</p>
               </div>
             </div>
           </CardContent>
@@ -188,14 +188,14 @@ export default function PaymentsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
+              <TrendingUp className="w-4 h-4 text-primary" />
               Monthly Earnings (Last 6 Months)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="relative h-56 pt-4">
               {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 bottom-8 w-12 flex flex-col justify-between text-[10px] text-slate-500">
+              <div className="absolute left-0 top-0 bottom-8 w-12 flex flex-col justify-between text-[10px] text-[var(--fg-faint)]">
                 <span>₹{Math.round(maxEarnings / 1000)}k</span>
                 <span>₹{Math.round(maxEarnings / 2000)}k</span>
                 <span>₹0</span>
@@ -205,9 +205,9 @@ export default function PaymentsPage() {
               <div className="ml-12 h-full relative">
                 {/* Grid lines */}
                 <div className="absolute inset-0 flex flex-col justify-between mb-8">
-                  <div className="border-t border-slate-200"></div>
-                  <div className="border-t border-slate-200"></div>
-                  <div className="border-t border-slate-200"></div>
+                  <div className="border-t border-border"></div>
+                  <div className="border-t border-border"></div>
+                  <div className="border-t border-border"></div>
                 </div>
 
                 {/* SVG Line Chart */}
@@ -215,8 +215,8 @@ export default function PaymentsPage() {
                   <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="rgb(37, 99, 235)" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="rgb(37, 99, 235)" stopOpacity="0.05" />
+                        <stop offset="0%" stopColor="rgb(186, 59, 65)" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="rgb(186, 59, 65)" stopOpacity="0.05" />
                       </linearGradient>
                     </defs>
 
@@ -240,7 +240,7 @@ export default function PaymentsPage() {
                         return `${x},${y}`
                       }).join(' ')}
                       fill="none"
-                      stroke="rgb(37, 99, 235)"
+                      stroke="rgb(186, 59, 65)"
                       strokeWidth="0.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -272,13 +272,13 @@ export default function PaymentsPage() {
                       >
                         {/* Tooltip */}
                         {isHovered && (
-                          <div className="absolute bottom-full mb-2 bg-slate-900 text-white px-3 py-2 rounded-lg text-xs whitespace-nowrap z-10 shadow-lg">
-                            <div className="font-semibold text-blue-300">{month}</div>
+                          <div className="absolute bottom-full mb-2 bg-foreground text-background px-3 py-2 rounded-lg text-xs whitespace-nowrap z-10 shadow-lg">
+                            <div className="font-semibold text-primary">{month}</div>
                             <div className="mt-1">₹{Math.round(earnings).toLocaleString('en-IN')}</div>
-                            <div className="text-slate-300 text-[10px]">{sessions} session{sessions !== 1 ? 's' : ''}</div>
+                            <div className="text-background/70 text-[10px]">{sessions} session{sessions !== 1 ? 's' : ''}</div>
                             {/* Arrow */}
                             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                              <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900"></div>
+                              <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-foreground"></div>
                             </div>
                           </div>
                         )}
@@ -289,10 +289,10 @@ export default function PaymentsPage() {
                           style={{ height: `${100 - yPercent}%` }}
                         >
                           <div
-                            className={`w-3 h-3 rounded-full bg-white border-2 transition-all ${
+                            className={`w-3 h-3 rounded-full bg-card border-2 transition-all ${
                               isHovered
-                                ? 'border-blue-600 scale-150 shadow-lg'
-                                : 'border-blue-500 group-hover:scale-125'
+                                ? 'border-primary scale-150 shadow-lg'
+                                : 'border-primary/70 group-hover:scale-125'
                             }`}
                           />
                         </div>
@@ -302,7 +302,7 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* X-axis labels */}
-                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-slate-500">
+                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-[var(--fg-faint)]">
                   {months.map(month => (
                     <span key={month} className="flex-1 text-center">{month}</span>
                   ))}
@@ -316,14 +316,14 @@ export default function PaymentsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-600" />
+              <Clock className="w-4 h-4 text-success" />
               Sessions Completed (Last 6 Months)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="relative h-56 pt-4">
               {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 bottom-8 w-12 flex flex-col justify-between text-[10px] text-slate-500">
+              <div className="absolute left-0 top-0 bottom-8 w-12 flex flex-col justify-between text-[10px] text-[var(--fg-faint)]">
                 <span>{Math.ceil(maxSessions)}</span>
                 <span>{Math.ceil(maxSessions / 2)}</span>
                 <span>0</span>
@@ -333,9 +333,9 @@ export default function PaymentsPage() {
               <div className="ml-12 h-full relative">
                 {/* Grid lines */}
                 <div className="absolute inset-0 flex flex-col justify-between mb-8">
-                  <div className="border-t border-slate-200"></div>
-                  <div className="border-t border-slate-200"></div>
-                  <div className="border-t border-slate-200"></div>
+                  <div className="border-t border-border"></div>
+                  <div className="border-t border-border"></div>
+                  <div className="border-t border-border"></div>
                 </div>
 
                 {/* Bars container */}
@@ -348,13 +348,13 @@ export default function PaymentsPage() {
                       <div key={month} className="flex-1 flex flex-col items-center justify-end h-full group">
                         {/* Value label on hover */}
                         {sessions > 0 && (
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity mb-1 text-[10px] font-semibold text-emerald-700 bg-white px-1 rounded">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity mb-1 text-[10px] font-semibold text-success bg-card px-1 rounded">
                             {sessions}
                           </div>
                         )}
                         {/* Bar */}
                         <div
-                          className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t transition-all group-hover:from-emerald-700 group-hover:to-emerald-500"
+                          className="w-full bg-gradient-to-t from-success to-success/60 rounded-t transition-all group-hover:opacity-90"
                           style={{
                             height: `${heightPercent}%`,
                             minHeight: sessions > 0 ? '8px' : '0px'
@@ -367,7 +367,7 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* X-axis labels */}
-                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-slate-500 px-2">
+                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-[var(--fg-faint)] px-2">
                   {months.map(month => (
                     <span key={month} className="flex-1 text-center">{month}</span>
                   ))}
@@ -383,13 +383,13 @@ export default function PaymentsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Per-Session Breakdown</CardTitle>
-            <p className="text-xs text-slate-500">{filteredBookings.length} completed sessions</p>
+            <p className="text-xs text-[var(--fg-faint)]">{filteredBookings.length} completed sessions</p>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-faint)]" />
             <Input
               placeholder="Search by student name..."
               value={searchQuery}
@@ -401,13 +401,13 @@ export default function PaymentsPage() {
           {/* Session List */}
           {filteredBookings.length === 0 ? (
             <div className="text-center py-12">
-              <DollarSign className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">
+              <DollarSign className="w-12 h-12 text-[var(--fg-faint)] mx-auto mb-3" />
+              <p className="text-sm text-[var(--fg-faint)]">
                 {searchQuery ? 'No sessions match your search.' : 'No completed sessions yet.'}
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-border">
               {filteredBookings.map(booking => {
                 const studentName = booking.profiles?.full_name || 'Unknown Student'
                 const duration = booking.duration_minutes || 60
@@ -416,12 +416,12 @@ export default function PaymentsPage() {
                 return (
                   <div key={booking.id} className="py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center font-bold text-sm">
                         {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{studentName}</p>
-                        <p className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                        <p className="text-sm font-medium text-foreground">{studentName}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                           <Calendar className="w-3 h-3" />
                           {formatDate(booking.start_time)}
                           <Clock className="w-3 h-3 ml-2" />
@@ -430,8 +430,8 @@ export default function PaymentsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-slate-900">₹{earned.toLocaleString('en-IN')}</p>
-                      <p className="text-xs text-slate-500">@₹{hourlyRate}/hr</p>
+                      <p className="text-sm font-semibold text-foreground">₹{earned.toLocaleString('en-IN')}</p>
+                      <p className="text-xs text-[var(--fg-faint)]">@₹{hourlyRate}/hr</p>
                     </div>
                   </div>
                 )
@@ -440,7 +440,7 @@ export default function PaymentsPage() {
           )}
 
           {filteredBookings.length > 10 && (
-            <p className="text-xs text-slate-500 text-center pt-4">
+            <p className="text-xs text-[var(--fg-faint)] text-center pt-4">
               💡 Tip: Payments are processed at month-end
             </p>
           )}

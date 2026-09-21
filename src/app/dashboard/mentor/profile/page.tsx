@@ -89,7 +89,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -98,8 +98,8 @@ export default function ProfilePage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Profile</h1>
-        <p className="text-slate-600 text-sm mt-1">
+        <h1 className="text-3xl font-display font-semibold text-foreground tracking-tight">Profile</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Edit your public-facing profile that students see.
         </p>
       </div>
@@ -108,55 +108,55 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <User className="w-4 h-4 text-blue-600" />
+            <User className="w-4 h-4 text-primary" />
             Professional Information
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Bio */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Professional Bio
             </label>
             <textarea
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+              className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
               rows={4}
               placeholder="Tell students about your background..."
               value={bio}
               onChange={(e) => setBio(e.target.value)}
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[var(--fg-faint)] mt-1">
               A brief summary of your professional experience.
             </p>
           </div>
 
           {/* Background */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Work Experience / Background
             </label>
             <textarea
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+              className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
               rows={4}
               placeholder="Describe your professional background and achievements..."
               value={background}
               onChange={(e) => setBackground(e.target.value)}
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[var(--fg-faint)] mt-1">
               Relevant work history, education, and accomplishments.
             </p>
           </div>
 
           {/* Expertise Tags */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
               <Tag className="w-4 h-4" />
               Areas of Expertise
             </label>
             <div className="space-y-3">
               <input
                 type="text"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="Type a skill and press Enter (e.g. Product Management)"
                 value={expertiseInput}
                 onChange={(e) => setExpertiseInput(e.target.value)}
@@ -164,39 +164,39 @@ export default function ProfilePage() {
               />
               <div className="flex flex-wrap gap-2">
                 {expertiseList.map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-100">
+                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent text-primary rounded-lg text-sm border border-accent">
                     {tag}
-                    <button onClick={() => handleRemoveExpertise(tag)} className="hover:bg-blue-200 rounded-full p-0.5 transition-colors">
+                    <button onClick={() => handleRemoveExpertise(tag)} className="hover:bg-accent/60 rounded-full p-0.5 transition-colors">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </span>
                 ))}
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[var(--fg-faint)] mt-1">
               Students can filter mentors by these tags.
             </p>
           </div>
 
           {/* Hourly Rate (Read-only) */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
               <IndianRupee className="w-4 h-4" />
               Hourly Rate
             </label>
             <div className="relative max-w-xs">
-              <div className="w-full bg-slate-100 border border-slate-200 rounded-xl pl-8 pr-4 py-3 text-sm text-slate-700">
+              <div className="w-full bg-muted border border-border rounded-xl pl-8 pr-4 py-3 text-sm text-muted-foreground">
                 ₹{mentorProfile?.hourly_rate || 0}/hour
               </div>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-[var(--fg-faint)]">
                 ℹ️ Only admins can change your hourly rate.
               </p>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="pt-4 border-t border-slate-200 flex items-center gap-3">
-            <Button onClick={saveProfile} disabled={saving}>
+          <div className="pt-4 border-t border-border flex items-center gap-3">
+            <Button onClick={saveProfile} disabled={saving} className="bg-[#0F1919] text-[#FFFBF3] hover:bg-[#1C2C2C] shadow-none">
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

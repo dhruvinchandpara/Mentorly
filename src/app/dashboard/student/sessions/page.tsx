@@ -114,7 +114,7 @@ export default function MySessionsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -123,19 +123,19 @@ export default function MySessionsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">My Sessions</h1>
-        <p className="text-slate-600 text-sm mt-1">
+        <h1 className="text-3xl font-semibold text-foreground tracking-tight">My Sessions</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           View and manage all your mentoring sessions and booking requests.
         </p>
       </div>
 
       {/* Ongoing Sessions (Always at top if exists) */}
       {ongoingSessions.length > 0 && (
-        <Card className="border-red-200 bg-red-50/30">
+        <Card className="border-destructive/30 bg-[#F5E6DE]/30">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Radio className="w-4 h-4 text-red-500 animate-pulse" />
-              <CardTitle className="text-base text-blue-950">Live Now - Ongoing Session</CardTitle>
+              <Radio className="w-4 h-4 text-destructive animate-pulse" />
+              <CardTitle className="text-base text-foreground">Live Now - Ongoing Session</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -143,17 +143,17 @@ export default function MySessionsPage() {
               const mentorName = session.mentors?.profiles?.full_name || 'Unknown Mentor'
               const note = session.session_notes?.[0] ?? null
               return (
-                <div key={session.id} className="p-4 bg-white border border-red-200 rounded-xl shadow-sm space-y-3">
+                <div key={session.id} className="p-4 bg-white border border-destructive/30 rounded-xl shadow-sm space-y-3">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="space-y-2">
-                      <p className="text-lg font-semibold text-blue-950">
+                      <p className="text-lg font-semibold text-foreground">
                         Session with {mentorName}
                       </p>
-                      <p className="text-sm text-slate-600 flex items-center gap-2">
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                       </p>
-                      <p className="text-sm text-red-700 font-medium flex items-center gap-2">
+                      <p className="text-sm text-destructive font-medium flex items-center gap-2">
                         <AlertCircle className="w-4 h-4" />
                         {getRemainingTime(session.end_time)}
                       </p>
@@ -163,7 +163,7 @@ export default function MySessionsPage() {
                         href={session.meet_link}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-base font-bold shadow-lg shadow-green-500/30 animate-pulse transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-[#0F1919] hover:bg-[#1C2C2C] text-[#FFFBF3] rounded-full text-base font-bold shadow-sm animate-pulse transition-all"
                       >
                         <Video className="w-5 h-5" />
                         Join Call Now
@@ -188,13 +188,13 @@ export default function MySessionsPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-3 border-b border-slate-200">
+      <div className="flex items-center gap-3 border-b border-border">
         <button
           onClick={() => setActiveTab('upcoming')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'upcoming'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
+              ? 'border-[#0F1919] text-[#0F1919]'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           Upcoming ({filteredUpcoming.length})
@@ -203,8 +203,8 @@ export default function MySessionsPage() {
           onClick={() => setActiveTab('pending')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'pending'
-              ? 'border-amber-600 text-amber-600'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
+              ? 'border-warning text-warning'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           Pending Review ({filteredPending.length})
@@ -213,8 +213,8 @@ export default function MySessionsPage() {
           onClick={() => setActiveTab('history')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'history'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
+              ? 'border-[#0F1919] text-[#0F1919]'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           History ({filteredHistory.length})
@@ -223,7 +223,7 @@ export default function MySessionsPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-faint)]" />
         <Input
           placeholder="Search by mentor name..."
           value={searchQuery}
@@ -241,8 +241,8 @@ export default function MySessionsPage() {
           <CardContent>
             {filteredUpcoming.length === 0 ? (
               <div className="text-center py-12">
-                <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">
+                <Calendar className="w-12 h-12 text-[var(--fg-faint)] mx-auto mb-3" />
+                <p className="text-sm text-[var(--fg-faint)]">
                   {searchQuery ? 'No sessions match your search.' : 'No upcoming approved sessions. Browse mentors to book your next session.'}
                 </p>
               </div>
@@ -255,19 +255,19 @@ export default function MySessionsPage() {
                     const isReady = state === 'ready'
 
                     return (
-                      <div key={session.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                      <div key={session.id} className="p-4 bg-secondary border border-border rounded-lg hover:bg-muted transition-colors">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                            <div className="w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center font-bold text-sm">
                               {mentorName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-slate-900">{mentorName}</p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                              <p className="text-sm font-medium text-foreground">{mentorName}</p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(session.start_time)}
                               </p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                               </p>
@@ -279,7 +279,7 @@ export default function MySessionsPage() {
                                 href={session.meet_link}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                                className="px-4 py-2 bg-[#0F1919] hover:bg-[#1C2C2C] text-[#FFFBF3] rounded-full text-sm font-semibold shadow-sm"
                               >
                                 <Video className="w-4 h-4 inline mr-1" />
                                 Join Call
@@ -290,7 +290,7 @@ export default function MySessionsPage() {
                                 href={session.meet_link}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-3 py-1.5 border border-slate-300 text-slate-600 hover:border-slate-400 rounded-lg text-xs font-medium flex items-center gap-1"
+                                className="px-3 py-1.5 border border-border text-muted-foreground hover:border-[var(--line-strong)] rounded-lg text-xs font-medium flex items-center gap-1"
                               >
                                 <ExternalLink className="w-3 h-3" />
                                 Meet Link
@@ -305,15 +305,15 @@ export default function MySessionsPage() {
 
                 {/* Pagination */}
                 {upcomingTotalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
-                    <p className="text-sm text-slate-600">
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                       Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredUpcoming.length)} of {filteredUpcoming.length} sessions
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-4 h-4" />
                         Previous
@@ -325,8 +325,8 @@ export default function MySessionsPage() {
                             onClick={() => setCurrentPage(page)}
                             className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
                               currentPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-700 hover:bg-slate-100'
+                                ? 'bg-[#0F1919] text-[#FFFBF3]'
+                                : 'text-muted-foreground hover:bg-muted'
                             }`}
                           >
                             {page}
@@ -336,7 +336,7 @@ export default function MySessionsPage() {
                       <button
                         onClick={() => setCurrentPage(p => Math.min(upcomingTotalPages, p + 1))}
                         disabled={currentPage === upcomingTotalPages}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next
                         <ChevronRight className="w-4 h-4" />
@@ -352,15 +352,15 @@ export default function MySessionsPage() {
 
       {/* 2. Pending Tab */}
       {activeTab === 'pending' && (
-        <Card className="border-amber-200 bg-amber-50/20">
+        <Card className="border-warning/30 bg-warning-bg/20">
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-amber-950">Pending Admin Review</CardTitle>
+            <CardTitle className="text-base font-semibold text-warning">Pending Admin Review</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredPending.length === 0 ? (
               <div className="text-center py-12">
-                <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">
+                <Clock className="w-12 h-12 text-[var(--fg-faint)] mx-auto mb-3" />
+                <p className="text-sm text-[var(--fg-faint)]">
                   {searchQuery ? 'No pending requests match your search.' : 'No session requests currently awaiting admin approval.'}
                 </p>
               </div>
@@ -370,19 +370,19 @@ export default function MySessionsPage() {
                   {paginatedPending.map(session => {
                     const mentorName = session.mentors?.profiles?.full_name || 'Unknown Mentor'
                     return (
-                      <div key={session.id} className="p-4 bg-white border border-amber-200 rounded-lg shadow-sm">
+                      <div key={session.id} className="p-4 bg-white border border-warning/30 rounded-lg shadow-sm">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
+                            <div className="w-10 h-10 rounded-full bg-warning-bg text-warning flex items-center justify-center font-bold text-sm">
                               {mentorName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-slate-900">Requested session with {mentorName}</p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                              <p className="text-sm font-medium text-foreground">Requested session with {mentorName}</p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(session.start_time)}
                               </p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                               </p>
@@ -399,15 +399,15 @@ export default function MySessionsPage() {
 
                 {/* Pagination */}
                 {pendingTotalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
-                    <p className="text-sm text-slate-600">
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                       Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredPending.length)} of {filteredPending.length} requests
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-4 h-4" />
                         Previous
@@ -419,8 +419,8 @@ export default function MySessionsPage() {
                             onClick={() => setCurrentPage(page)}
                             className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
                               currentPage === page
-                                ? 'bg-amber-600 text-white'
-                                : 'text-slate-700 hover:bg-slate-100'
+                                ? 'bg-warning text-white'
+                                : 'text-muted-foreground hover:bg-muted'
                             }`}
                           >
                             {page}
@@ -430,7 +430,7 @@ export default function MySessionsPage() {
                       <button
                         onClick={() => setCurrentPage(p => Math.min(pendingTotalPages, p + 1))}
                         disabled={currentPage === pendingTotalPages}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next
                         <ChevronRight className="w-4 h-4" />
@@ -453,8 +453,8 @@ export default function MySessionsPage() {
           <CardContent>
             {filteredHistory.length === 0 ? (
               <div className="text-center py-12">
-                <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">
+                <BookOpen className="w-12 h-12 text-[var(--fg-faint)] mx-auto mb-3" />
+                <p className="text-sm text-[var(--fg-faint)]">
                   {searchQuery ? 'No sessions match your search.' : 'No session history yet.'}
                 </p>
               </div>
@@ -471,19 +471,19 @@ export default function MySessionsPage() {
                     const isLocked = note?.is_locked || is24hExpired
 
                     return (
-                      <div key={session.id} className="p-4 bg-white border border-slate-200 rounded-lg space-y-2">
+                      <div key={session.id} className="p-4 bg-white border border-border rounded-lg space-y-2">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm">
+                            <div className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
                               {mentorName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-slate-900">{mentorName}</p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                              <p className="text-sm font-medium text-foreground">{mentorName}</p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(session.start_time)}
                               </p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                               </p>
@@ -502,7 +502,7 @@ export default function MySessionsPage() {
                           </div>
                         </div>
                         {isRejected && session.rejection_reason && (
-                          <div className="text-xs text-rose-700 bg-rose-50 border border-rose-100 p-2 rounded">
+                          <div className="text-xs text-destructive bg-[#F5E6DE] border border-destructive/20 p-2 rounded">
                             <span className="font-semibold">Reason: </span>
                             {session.rejection_reason}
                           </div>
@@ -526,15 +526,15 @@ export default function MySessionsPage() {
 
                 {/* Pagination */}
                 {historyTotalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
-                    <p className="text-sm text-slate-600">
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                       Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredHistory.length)} of {filteredHistory.length} sessions
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-4 h-4" />
                         Previous
@@ -546,8 +546,8 @@ export default function MySessionsPage() {
                             onClick={() => setCurrentPage(page)}
                             className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
                               currentPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-700 hover:bg-slate-100'
+                                ? 'bg-[#0F1919] text-[#FFFBF3]'
+                                : 'text-muted-foreground hover:bg-muted'
                             }`}
                           >
                             {page}
@@ -557,7 +557,7 @@ export default function MySessionsPage() {
                       <button
                         onClick={() => setCurrentPage(p => Math.min(historyTotalPages, p + 1))}
                         disabled={currentPage === historyTotalPages}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next
                         <ChevronRight className="w-4 h-4" />

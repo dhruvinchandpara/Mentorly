@@ -155,7 +155,7 @@ export default function AvailabilityPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -164,8 +164,8 @@ export default function AvailabilityPage() {
     <div className="max-w-7xl mx-auto space-y-4">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Availability</h1>
-        <p className="text-slate-600 text-sm mt-1.5">
+        <h1 className="text-3xl font-display font-semibold text-foreground tracking-tight">Availability</h1>
+        <p className="text-muted-foreground text-sm mt-1.5">
           Set your weekly recurring schedule and add date-specific availability.
         </p>
       </div>
@@ -176,7 +176,7 @@ export default function AvailabilityPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-600" />
+              <Clock className="w-4 h-4 text-primary" />
               Weekly Recurring Schedule
             </CardTitle>
           </CardHeader>
@@ -184,16 +184,16 @@ export default function AvailabilityPage() {
             {DAYS_OF_WEEK.map((day, index) => {
               const isAvailable = !!availability[index]
               return (
-                <div key={day} className={`flex items-center gap-2 p-2.5 rounded-lg border transition-colors ${isAvailable ? 'bg-slate-50 border-blue-200' : 'bg-transparent border-slate-100'}`}>
+                <div key={day} className={`flex items-center gap-2 p-2.5 rounded-lg border transition-colors ${isAvailable ? 'bg-muted border-primary/30' : 'bg-transparent border-border'}`}>
                   <div className="flex items-center gap-2 min-w-[100px]">
                     <input
                       type="checkbox"
                       id={`day-${index}`}
                       checked={isAvailable}
                       onChange={() => toggleDay(index)}
-                      className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
+                      className="w-4 h-4 rounded border-primary/40 text-primary focus:ring-primary cursor-pointer"
                     />
-                    <label htmlFor={`day-${index}`} className={`text-sm font-medium cursor-pointer ${isAvailable ? 'text-slate-900' : 'text-slate-500'}`}>
+                    <label htmlFor={`day-${index}`} className={`text-sm font-medium cursor-pointer ${isAvailable ? 'text-foreground' : 'text-[var(--fg-faint)]'}`}>
                       {day.substring(0, 3)}
                     </label>
                   </div>
@@ -202,21 +202,21 @@ export default function AvailabilityPage() {
                       type="time"
                       value={availability[index]?.start_time || '09:00'}
                       onChange={(e) => updateTime(index, 'start_time', e.target.value)}
-                      className="w-28 bg-white border border-blue-200 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-28 bg-card border border-primary/30 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-primary/20 focus:border-primary"
                     />
-                    <span className="text-slate-400 text-sm">-</span>
+                    <span className="text-[var(--fg-faint)] text-sm">-</span>
                     <input
                       type="time"
                       value={availability[index]?.end_time || '17:00'}
                       onChange={(e) => updateTime(index, 'end_time', e.target.value)}
-                      className="w-28 bg-white border border-blue-200 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-28 bg-card border border-primary/30 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-primary/20 focus:border-primary"
                     />
                   </div>
                 </div>
               )
             })}
             <div className="pt-3">
-              <Button onClick={saveAvailability} disabled={saving} size="sm" className="w-full">
+              <Button onClick={saveAvailability} disabled={saving} size="sm" className="w-full bg-[#0F1919] text-[#FFFBF3] hover:bg-[#1C2C2C] shadow-none">
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -237,15 +237,15 @@ export default function AvailabilityPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-blue-600" />
+              <Calendar className="w-4 h-4 text-primary" />
               Date-Specific Availability
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {/* Mini Calendar */}
-            <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+            <div className="border border-border rounded-lg p-3 bg-muted/50">
               <div className="flex justify-between items-center mb-2.5">
-                <h3 className="text-sm font-semibold text-slate-900">{monthNames[viewMonth]} {viewYear}</h3>
+                <p className="text-sm font-semibold text-foreground">{monthNames[viewMonth]} {viewYear}</p>
                 <div className="flex gap-1">
                   <button
                     onClick={() => {
@@ -256,7 +256,7 @@ export default function AvailabilityPage() {
                         setViewMonth(v => v - 1)
                       }
                     }}
-                    className="p-1 hover:bg-slate-200 rounded transition-colors"
+                    className="p-1 hover:bg-accent rounded transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -269,7 +269,7 @@ export default function AvailabilityPage() {
                         setViewMonth(v => v + 1)
                       }
                     }}
-                    className="p-1 hover:bg-slate-200 rounded transition-colors"
+                    className="p-1 hover:bg-accent rounded transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -277,7 +277,7 @@ export default function AvailabilityPage() {
               </div>
               <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                  <div key={d} className="text-xs font-bold text-slate-400 uppercase">{d}</div>
+                  <div key={d} className="text-xs font-bold text-[var(--fg-faint)] uppercase">{d}</div>
                 ))}
               </div>
               <div className="grid grid-cols-7 gap-1">
@@ -294,10 +294,10 @@ export default function AvailabilityPage() {
                     <button
                       key={day}
                       onClick={() => setSelectedDate(dateObj)}
-                      className={`aspect-square flex flex-col items-center justify-center rounded text-sm transition-all relative ${isSelected ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-50'}`}
+                      className={`aspect-square flex flex-col items-center justify-center rounded text-sm transition-all relative ${isSelected ? 'bg-[#0F1919] text-[#FFFBF3] font-bold' : 'hover:bg-accent'}`}
                     >
                       {day}
-                      {hasSlots && <div className={`w-1 h-1 rounded-full absolute bottom-1 ${isSelected ? 'bg-white' : 'bg-blue-500'}`} />}
+                      {hasSlots && <div className={`w-1 h-1 rounded-full absolute bottom-1 ${isSelected ? 'bg-[#FFFBF3]' : 'bg-primary'}`} />}
                     </button>
                   )
                 })}
@@ -307,14 +307,13 @@ export default function AvailabilityPage() {
             {/* Selected Day Slots */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <h4 className="text-sm font-semibold text-slate-800">
+                <h4 className="text-sm font-semibold text-foreground">
                   {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </h4>
                 <Button
                   onClick={() => addCustomSlot(selectedDate)}
                   size="sm"
-                  variant="outline"
-                  className="h-7 text-xs px-2.5"
+                  className="h-7 text-xs px-2.5 bg-[#0F1919] text-[#FFFBF3] hover:bg-[#1C2C2C] shadow-none"
                 >
                   + Add
                 </Button>
@@ -324,9 +323,9 @@ export default function AvailabilityPage() {
                 const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
                 return s.specific_date === selectedDateStr
               }).length === 0 ? (
-                <div className="text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                  <AlertCircle className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                  <p className="text-xs text-slate-500">
+                <div className="text-center py-4 bg-muted rounded-lg border border-dashed border-[var(--line-strong)]">
+                  <AlertCircle className="w-6 h-6 text-[var(--fg-faint)] mx-auto mb-1" />
+                  <p className="text-xs text-[var(--fg-faint)]">
                     No slots for this date
                   </p>
                 </div>
@@ -336,15 +335,15 @@ export default function AvailabilityPage() {
                     const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
                     if (slot.specific_date !== selectedDateStr) return null
                     return (
-                      <div key={index} className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200 group">
-                        <Clock className="w-4 h-4 text-slate-400" />
+                      <div key={index} className="flex items-center gap-2 p-2.5 bg-muted rounded-lg border border-border group">
+                        <Clock className="w-4 h-4 text-[var(--fg-faint)]" />
                         <input
                           type="time"
                           value={slot.start_time}
                           onChange={(e) => updateCustomTime(index, 'start_time', e.target.value)}
                           className="bg-transparent border-none p-0 text-sm focus:ring-0 w-24"
                         />
-                        <span className="text-slate-400 text-sm">-</span>
+                        <span className="text-[var(--fg-faint)] text-sm">-</span>
                         <input
                           type="time"
                           value={slot.end_time}
@@ -353,7 +352,7 @@ export default function AvailabilityPage() {
                         />
                         <button
                           onClick={() => removeCustomSlot(index)}
-                          className="ml-auto opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-opacity"
+                          className="ml-auto opacity-0 group-hover:opacity-100 text-[#BA3B41] hover:text-[#A8343A] transition-opacity"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -364,8 +363,8 @@ export default function AvailabilityPage() {
               )}
             </div>
 
-            <div className="pt-2 border-t border-slate-200">
-              <Button onClick={saveAvailability} disabled={saving} size="sm" className="w-full">
+            <div className="pt-2 border-t border-border">
+              <Button onClick={saveAvailability} disabled={saving} size="sm" className="w-full bg-[#0F1919] text-[#FFFBF3] hover:bg-[#1C2C2C] shadow-none">
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />

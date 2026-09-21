@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { processBooking } from '@/app/actions/booking'
+import { DURATION_OPTIONS, validateBookingForm, type DurationOption } from '@/lib/booking-validation'
 import {
   ArrowLeft, Calendar, Clock, Tag, CheckCircle,
   Sparkles, CalendarDays, ChevronLeft, ChevronRight, Loader2,
@@ -99,13 +100,18 @@ export default function MentorBookingPage() {
     endIso: string
     meetLink?: string
     isPending?: boolean
+    durationMinutes: number
+    preWorkReason: string
   } | null>(null)
 
   const [weekOffset, setWeekOffset] = useState(0)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  const [slotCount, setSlotCount] = useState(2) // default: 30 min = 2 slots
+  const [durationMinutes, setDurationMinutes] = useState<DurationOption>(30)
+  const [preWorkReason, setPreWorkReason] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
   const [bookedSlots, setBookedSlots] = useState<string[]>([])
+  const slotCount = durationMinutes / 15
 
   // Fetch mentor profile
   useEffect(() => {
@@ -300,14 +306,19 @@ export default function MentorBookingPage() {
       return
     }
 
+    const validation = validateBookingForm({ preWorkReason, durationMinutes })
+    if (!validation.valid) {
+      setFormError(validation.error)
+      return
+    }
+    setFormError(null)
+
     setBooking(true)
     try {
       const [h, m] = selectedTime.split(':').map(Number)
       const startDateTime = new Date(selectedDate)
       startDateTime.setHours(h, m, 0, 0)
 
-      // Calculate end time based on slot count (each slot is 15 minutes)
-      const durationMinutes = slotCount * 15
       const endDateTime = new Date(startDateTime)
       endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes)
 
@@ -319,8 +330,9 @@ export default function MentorBookingPage() {
         studentId: user.id,
         startTime: startDateTime.toISOString(), // Stored in UTC
         endTime: endDateTime.toISOString(), // Stored in UTC
-        durationMinutes: durationMinutes,
-        slotCount: slotCount,
+        durationMinutes,
+        slotCount,
+        preWorkReason,
       })
 
       if (!result.success) {
@@ -335,6 +347,8 @@ export default function MentorBookingPage() {
         endIso: endDateTime.toISOString(),
         meetLink: meetLinkStr,
         isPending: result.status === 'pending',
+        durationMinutes,
+        preWorkReason,
       })
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -349,13 +363,13 @@ export default function MentorBookingPage() {
 
   const getAvatarColor = (name: string) => {
     const gradients = [
-      'from-blue-500 to-blue-600',
-      'from-emerald-500 to-emerald-600',
-      'from-violet-500 to-violet-600',
-      'from-amber-500 to-amber-600',
-      'from-rose-500 to-rose-600',
-      'from-cyan-500 to-cyan-600',
-      'from-indigo-500 to-indigo-600',
+      'from-primary to-[var(--primary-hover)]',
+      'from-success to-[#3d6049]',
+      'from-info to-[#47535c]',
+      'from-warning to-[#6c5518]',
+      'from-destructive to-[#591c1f]',
+      'from-[#7c8891] to-[#5b6b7a]',
+      'from-[var(--deep-teal-black)] to-[#1c2b2b]',
     ]
     const index = (name?.charCodeAt(0) || 0) % gradients.length
     return gradients[index]
@@ -363,21 +377,21 @@ export default function MentorBookingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     )
   }
 
   if (!mentor) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+      <div className="min-h-screen bg-background flex items-center justify-center p-8">
         <div className="text-center">
-          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <BookOpen className="w-10 h-10 text-slate-400" />
+          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+            <BookOpen className="w-10 h-10 text-[var(--fg-faint)]" />
           </div>
-          <h2 className="text-2xl font-semibold text-slate-900 mb-2">Mentor Not Found</h2>
-          <p className="text-slate-600 mb-6">This mentor profile doesn&apos;t exist or has been removed.</p>
+          <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Mentor Not Found</h2>
+          <p className="text-muted-foreground mb-6">This mentor profile doesn&apos;t exist or has been removed.</p>
           <Link href={exploreUrl} className="btn-primary">
             Browse Mentors
           </Link>
@@ -397,59 +411,67 @@ export default function MentorBookingPage() {
     })
 
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+      <div className="min-h-screen bg-background flex items-center justify-center p-8">
         <div className="max-w-md w-full text-center">
           <div className="card-modern p-10">
             {/* Success / Pending Icon */}
             {bookedInfo.isPending ? (
-              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Clock className="w-12 h-12 text-amber-600 animate-pulse" />
+              <div className="w-20 h-20 bg-warning-bg rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-12 h-12 text-warning animate-pulse" />
               </div>
             ) : (
-              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-12 h-12 text-emerald-600" />
+              <div className="w-20 h-20 bg-success-bg rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-12 h-12 text-success" />
               </div>
             )}
 
-            <h2 className="text-2xl font-semibold text-slate-900 mb-3">
+            <h2 className="text-2xl font-display font-semibold text-foreground mb-3">
               {bookedInfo.isPending ? 'Booking Request Submitted!' : 'Session Booked!'}
             </h2>
-            <p className="text-slate-600 mb-2">
+            <p className="text-muted-foreground mb-2">
               {bookedInfo.isPending ? (
-                <>Your session request with <span className="font-semibold text-slate-900">{mentor.profiles?.full_name}</span> has been sent to the admin for review. You will receive meeting details upon approval.</>
+                <>Your session request with <span className="font-semibold text-foreground">{mentor.profiles?.full_name}</span> has been sent to the admin for review. You will receive meeting details upon approval.</>
               ) : (
-                <>Your session with <span className="font-semibold text-slate-900">{mentor.profiles?.full_name}</span> has been confirmed.</>
+                <>Your session with <span className="font-semibold text-foreground">{mentor.profiles?.full_name}</span> has been confirmed.</>
               )}
             </p>
 
             {/* Session details */}
-            <div className="bg-slate-50 rounded-xl p-4 my-6 border border-slate-200 text-left space-y-3">
+            <div className="bg-muted rounded-xl p-4 my-6 border border-border text-left space-y-3">
               <div className="flex items-center gap-3 text-sm">
-                <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span className="font-medium text-slate-900">
+                <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="font-medium text-foreground">
                   {selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span className="font-medium text-slate-900">
-                  {selectedTime && formatTime(selectedTime)} ({slotCount * 15} minutes)
+                <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="font-medium text-foreground">
+                  {selectedTime && formatTime(selectedTime)} ({bookedInfo.durationMinutes} minutes)
+                </span>
+              </div>
+              <div className="flex items-start gap-3 text-sm">
+                <BookOpen className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground/80">
+                  {bookedInfo.preWorkReason.length > 100
+                    ? `${bookedInfo.preWorkReason.slice(0, 100)}…`
+                    : bookedInfo.preWorkReason}
                 </span>
               </div>
               {bookedInfo.meetLink ? (
                 <div className="flex items-center gap-3 text-sm">
-                  <Video className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <Video className="w-4 h-4 text-primary flex-shrink-0" />
                   <a
                     href={bookedInfo.meetLink}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-600 font-medium hover:underline truncate"
+                    className="text-primary font-medium hover:underline truncate"
                   >
                     Join Meeting Room
                   </a>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 text-sm text-amber-700 font-medium">
+                <div className="flex items-center gap-3 text-sm text-warning font-medium">
                   <Clock className="w-4 h-4 flex-shrink-0" />
                   <span>Google Meet link will be generated upon admin approval.</span>
                 </div>
@@ -463,7 +485,7 @@ export default function MentorBookingPage() {
                   href={calUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-card border border-[var(--line-strong)] text-muted-foreground rounded-lg font-medium hover:bg-muted transition-colors"
                 >
                   <CalendarDays className="w-4 h-4" />
                   Add to Google Calendar
@@ -478,7 +500,7 @@ export default function MentorBookingPage() {
               </Link>
               <Link
                 href={exploreUrl}
-                className="w-full px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors text-center"
+                className="w-full px-6 py-3 bg-card border border-[var(--line-strong)] text-muted-foreground rounded-lg font-medium hover:bg-muted transition-colors text-center"
               >
                 Browse More Mentors
               </Link>
@@ -491,16 +513,16 @@ export default function MentorBookingPage() {
 
   // ── Main Booking UI ────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-semibold text-slate-900 tracking-tight">Mentorly</span>
+            <span className="text-lg font-display font-semibold text-foreground tracking-tight">Mentorly</span>
           </Link>
-          <Link href={exploreUrl} className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors">
+          <Link href={exploreUrl} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Back to Explore
           </Link>
@@ -514,37 +536,37 @@ export default function MentorBookingPage() {
             <div className="card-modern overflow-hidden sticky top-24">
               <div className={`h-24 bg-gradient-to-br ${getAvatarColor(mentor.profiles?.full_name || '')} relative`}>
                 <div className="absolute -bottom-10 left-6">
-                  <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${getAvatarColor(mentor.profiles?.full_name || '')} flex items-center justify-center text-white font-bold text-2xl shadow-lg border-4 border-white`}>
+                  <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${getAvatarColor(mentor.profiles?.full_name || '')} flex items-center justify-center text-white font-bold text-2xl shadow-lg border-4 border-card`}>
                     {getInitials(mentor.profiles?.full_name || '')}
                   </div>
                 </div>
               </div>
 
               <div className="pt-14 px-6 pb-6">
-                <h1 className="text-2xl font-semibold text-slate-900 mb-1">{mentor.profiles?.full_name}</h1>
+                <h1 className="text-2xl font-display font-semibold text-foreground mb-1">{mentor.profiles?.full_name}</h1>
                 <div className="flex items-center gap-4 mb-6">
                   {mentor.is_active && (
                     <span className="badge-success">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                       Available
                     </span>
                   )}
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2 uppercase tracking-wider">About</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                  <h3 className="text-sm font-semibold text-foreground mb-2 uppercase tracking-wider">About</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     {mentor.bio || "This mentor hasn't added a bio yet."}
                   </p>
                 </div>
                 {mentor.expertise?.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
                       <Tag className="w-4 h-4" />
                       Expertise
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {mentor.expertise.map(tag => (
-                        <span key={tag} className="px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
+                        <span key={tag} className="px-2.5 py-1 text-xs font-medium bg-accent text-primary border border-accent rounded-md">
                           {tag}
                         </span>
                       ))}
@@ -560,12 +582,12 @@ export default function MentorBookingPage() {
             {/* Header Card */}
             <div className="card-modern p-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <CalendarDays className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
+                  <CalendarDays className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Book a Session</h2>
-                  <p className="text-sm text-slate-600">Select a date and time to schedule your 1-on-1</p>
+                  <h2 className="text-xl font-display font-semibold text-foreground">Book a Session</h2>
+                  <p className="text-sm text-muted-foreground">Select a date and time to schedule your 1-on-1</p>
                 </div>
               </div>
             </div>
@@ -573,24 +595,24 @@ export default function MentorBookingPage() {
             {/* Date Picker */}
             <div className="card-modern p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
                   Select a Date
                 </h3>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setWeekOffset(Math.max(0, weekOffset - 1))}
                     disabled={weekOffset === 0}
-                    className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
-                    <ChevronLeft className="w-4 h-4 text-slate-700" />
+                    <ChevronLeft className="w-4 h-4 text-muted-foreground" />
                   </button>
                   <button
                     onClick={() => setWeekOffset(weekOffset + 1)}
                     disabled={weekOffset >= 3}
-                    className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
-                    <ChevronRight className="w-4 h-4 text-slate-700" />
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
               </div>
@@ -610,27 +632,27 @@ export default function MentorBookingPage() {
                       }}
                       className={`relative p-3 rounded-lg text-center transition-all border ${
                         isSelected
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                          ? 'bg-primary border-primary text-white shadow-md'
                           : hasSlots
-                          ? 'bg-white border-slate-200 hover:border-blue-300 cursor-pointer'
-                          : 'bg-slate-50 border-slate-100 opacity-60'
+                          ? 'bg-card border-border hover:border-primary/40 cursor-pointer'
+                          : 'bg-muted border-border opacity-60'
                       }`}
                     >
-                      <p className={`text-xs font-medium mb-1 ${isSelected ? 'text-blue-100' : 'text-slate-600'}`}>
+                      <p className={`text-xs font-medium mb-1 ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
                         {DAYS_SHORT[date.getDay()]}
                       </p>
-                      <p className={`text-lg font-semibold ${isSelected ? 'text-white' : hasSlots ? 'text-slate-900' : 'text-slate-400'}`}>
+                      <p className={`text-lg font-semibold ${isSelected ? 'text-white' : hasSlots ? 'text-foreground' : 'text-[var(--fg-faint)]'}`}>
                         {date.getDate()}
                       </p>
-                      <p className={`text-[10px] font-medium ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
+                      <p className={`text-[10px] font-medium ${isSelected ? 'text-white/80' : 'text-[var(--fg-faint)]'}`}>
                         {date.toLocaleDateString('en-US', { month: 'short' })}
                       </p>
                       {isToday && (
-                        <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-500'}`} />
+                        <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-primary'}`} />
                       )}
                       {hasSlots && !isSelected && (
                         <div className="mt-1.5 flex justify-center">
-                          <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                          <span className="w-1 h-1 rounded-full bg-success" />
                         </div>
                       )}
                     </button>
@@ -642,43 +664,56 @@ export default function MentorBookingPage() {
             {/* Time Slots */}
             {selectedDate && (
               <div className="card-modern p-6">
-                <h3 className="text-base font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-blue-600" />
+                <h3 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary" />
                   Available Times
                 </h3>
-                <p className="text-sm text-slate-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
 
-                {/* Slot Duration Selector */}
+                {/* Session Duration */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-3">
-                    Session Duration
+                  <label htmlFor="session-duration" className="block text-sm font-medium text-muted-foreground mb-3">
+                    Session duration <span className="text-destructive">*</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => { setSlotCount(1); setSelectedTime(null); }}
-                      className={`py-3 px-4 rounded-lg text-sm font-medium transition-all border ${
-                        slotCount === 1
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-md'
-                          : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="text-base font-semibold">15 min</div>
-                      <div className="text-xs opacity-75">Single slot</div>
-                    </button>
-                    <button
-                      onClick={() => { setSlotCount(2); setSelectedTime(null); }}
-                      className={`py-3 px-4 rounded-lg text-sm font-medium transition-all border ${
-                        slotCount === 2
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-md'
-                          : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="text-base font-semibold">30 min</div>
-                      <div className="text-xs opacity-75">Double slot</div>
-                    </button>
-                  </div>
+                  <select
+                    id="session-duration"
+                    value={durationMinutes}
+                    onChange={(e) => {
+                      setDurationMinutes(Number(e.target.value) as DurationOption)
+                      setSelectedTime(null)
+                    }}
+                    className="w-full py-3 px-4 rounded-lg text-sm font-medium bg-card border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {DURATION_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option} minutes
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Pre-Work Reason */}
+                <div className="mb-6">
+                  <label htmlFor="pre-work-reason" className="block text-sm font-medium text-muted-foreground mb-3">
+                    Why do you need this session? <span className="text-destructive">*</span>
+                  </label>
+                  <textarea
+                    id="pre-work-reason"
+                    value={preWorkReason}
+                    onChange={(e) => {
+                      setPreWorkReason(e.target.value)
+                      setFormError(null)
+                    }}
+                    maxLength={500}
+                    rows={3}
+                    placeholder="e.g., I want to discuss my project roadmap"
+                    className="w-full py-3 px-4 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-[var(--fg-faint)] focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="mt-1.5 text-xs text-[var(--fg-faint)] text-right">
+                    {preWorkReason.length} / 500
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
@@ -698,10 +733,10 @@ export default function MentorBookingPage() {
                             disabled={isDisabled}
                             className={`py-2 px-2 rounded-lg text-xs font-medium transition-all border ${
                               isSelectedTime
-                                ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                ? 'bg-primary border-primary text-white shadow-md'
                                 : isDisabled
-                                ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-50'
-                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 cursor-pointer'
+                                ? 'bg-muted border-border text-[var(--fg-faint)] cursor-not-allowed opacity-50'
+                                : 'bg-card border-border text-muted-foreground hover:border-[var(--line-strong)] cursor-pointer'
                             }`}
                             title={isBooked ? 'Already booked' : !hasEnoughConsecutiveSlots ? `Need ${slotCount} consecutive slots` : ''}
                           >
@@ -711,27 +746,30 @@ export default function MentorBookingPage() {
                       })
                     })()
                   ) : (
-                    <div className="col-span-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                      <p className="text-slate-600 text-sm">No available time slots found for this date.</p>
+                    <div className="col-span-full py-8 text-center bg-muted rounded-lg border border-dashed border-[var(--line-strong)]">
+                      <p className="text-muted-foreground text-sm">No available time slots found for this date.</p>
                     </div>
                   )}
                 </div>
 
                 {selectedTime && (
-                  <div className="mt-6 pt-6 border-t border-slate-200">
+                  <div className="mt-6 pt-6 border-t border-border">
+                    {formError && (
+                      <p className="mb-4 text-sm text-destructive">{formError}</p>
+                    )}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div>
-                        <p className="text-sm text-slate-600">Selected Session</p>
-                        <p className="text-base font-semibold text-slate-900">
+                        <p className="text-sm text-muted-foreground">Selected Session</p>
+                        <p className="text-base font-semibold text-foreground">
                           {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {formatTime(selectedTime)}
                         </p>
-                        <p className="text-sm text-slate-600">
-                          {slotCount * 15} minutes
+                        <p className="text-sm text-muted-foreground">
+                          {durationMinutes} minutes
                         </p>
                       </div>
                       <button
                         onClick={handleBookSession}
-                        disabled={booking || !user}
+                        disabled={booking || !user || !preWorkReason.trim()}
                         className="btn-primary"
                       >
                         {booking ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}

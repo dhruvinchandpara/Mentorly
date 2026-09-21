@@ -37,8 +37,8 @@ export default function AdminProfile() {
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight mb-2">Edit Profile</h1>
-        <p className="text-slate-600">Manage your admin profile information and integrations.</p>
+        <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-2">Edit Profile</h1>
+        <p className="text-muted-foreground">Manage your admin profile information and integrations.</p>
       </div>
 
       {/* Google Account Connection */}
@@ -52,9 +52,9 @@ export default function AdminProfile() {
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Full Name</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Full Name</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-faint)]" />
                 <Input
                   type="text"
                   value={fullName}
@@ -66,23 +66,23 @@ export default function AdminProfile() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Email Address</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-faint)]" />
                 <Input
                   type="email"
                   value={profile?.email || ''}
                   disabled
-                  className="pl-9 bg-slate-50 cursor-not-allowed"
+                  className="pl-9 bg-secondary cursor-not-allowed"
                 />
               </div>
-              <p className="text-xs text-slate-500 mt-1">Email cannot be changed.</p>
+              <p className="text-xs text-[var(--fg-faint)] mt-1">Email cannot be changed.</p>
             </div>
 
             <Button
               type="submit"
               disabled={saving}
-              className="btn-primary"
+              className="bg-[#0F1919] hover:bg-[#1C2C2C] text-[#FFFBF3] shadow-none"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Save Changes
@@ -91,8 +91,8 @@ export default function AdminProfile() {
 
           {message && (
             <div className={`mt-4 p-3 rounded-lg text-sm ${message.type === 'success'
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
+              ? 'bg-success-bg text-success border border-success'
+              : 'bg-[#F5E6DE] text-destructive border border-destructive'
               }`}>
               {message.text}
             </div>

@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
 import { User, Mail, Save, Loader2, FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 interface StudentProfile {
@@ -97,7 +96,7 @@ export default function StudentProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -106,8 +105,8 @@ export default function StudentProfilePage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Profile</h1>
-        <p className="text-slate-600 text-sm mt-1">
+        <h1 className="text-3xl font-semibold text-foreground tracking-tight">Profile</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Update your profile so mentors can learn more about you.
         </p>
       </div>
@@ -116,14 +115,14 @@ export default function StudentProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <User className="w-4 h-4 text-blue-600" />
+            <User className="w-4 h-4 text-primary" />
             Personal Information
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Full Name */}
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="fullName" className="block text-sm font-medium text-muted-foreground mb-2">
               Full Name
             </label>
             <Input
@@ -132,13 +131,13 @@ export default function StudentProfilePage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Enter your full name"
-              className="bg-slate-50"
+              className="bg-secondary"
             />
           </div>
 
           {/* Email (Read-only) */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Email Address
             </label>
@@ -147,26 +146,26 @@ export default function StudentProfilePage() {
               type="email"
               value={profile?.email || ''}
               disabled
-              className="bg-slate-100 cursor-not-allowed text-slate-600"
+              className="bg-muted cursor-not-allowed text-muted-foreground"
             />
-            <p className="text-xs text-slate-500 mt-1">Email cannot be changed.</p>
+            <p className="text-xs text-[var(--fg-faint)] mt-1">Email cannot be changed.</p>
           </div>
 
           {/* Bio */}
           <div>
-            <label htmlFor="bio" className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <label htmlFor="bio" className="block text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               About Me
             </label>
             <textarea
               id="bio"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+              className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
               rows={6}
               placeholder="Tell mentors about yourself, your goals, what you're looking to learn..."
               value={bio}
               onChange={(e) => setBio(e.target.value)}
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[var(--fg-faint)] mt-1">
               This helps mentors prepare for your sessions and understand your background.
             </p>
           </div>
@@ -175,28 +174,32 @@ export default function StudentProfilePage() {
           {message && (
             <div className={`p-4 rounded-lg text-sm border ${
               message.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : 'bg-red-50 text-red-700 border-red-200'
+                ? 'bg-success-bg text-success border-success/30'
+                : 'bg-[#F5E6DE] text-destructive border-destructive/30'
             }`}>
               {message.text}
             </div>
           )}
 
           {/* Actions */}
-          <div className="pt-4 border-t border-slate-200">
-            <Button onClick={saveProfile} disabled={saving}>
+          <div className="pt-4 border-t border-border">
+            <button
+              onClick={saveProfile}
+              disabled={saving}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+            >
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4" />
                   Save Changes
                 </>
               )}
-            </Button>
+            </button>
           </div>
         </CardContent>
       </Card>

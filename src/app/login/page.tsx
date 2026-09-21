@@ -91,12 +91,12 @@ export default function LoginPage() {
               <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-semibold text-slate-900 tracking-tight">Mentorly</span>
+              <span className="text-2xl font-semibold text-foreground tracking-tight">Mentorly</span>
             </Link>
-            <h2 className="text-3xl font-semibold text-slate-900 tracking-tight">
+            <h2 className="text-3xl font-semibold text-foreground tracking-tight">
               {isSignUp ? 'Create your account' : 'Welcome back'}
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               {isSignUp ? 'Sign up to start your mentorship journey' : 'Sign in to your account to continue'}
             </p>
           </div>
@@ -106,8 +106,8 @@ export default function LoginPage() {
             <div
               className={`flex items-start gap-3 p-4 rounded-lg border ${
                 message.type === 'success'
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                  : 'bg-red-50 border-red-200 text-red-800'
+                  ? 'bg-success-bg border-success/30 text-success'
+                  : 'bg-[#F5E6DE] border-destructive/30 text-destructive'
               }`}
             >
               {message.type === 'success' ? (
@@ -123,12 +123,12 @@ export default function LoginPage() {
           <form onSubmit={handleAuth} className="space-y-6">
             {isSignUp && (
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="fullName" className="block text-sm font-medium text-muted-foreground mb-2">
                   Full Name
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-slate-400" />
+                    <User className="h-5 w-5 text-[var(--fg-faint)]" />
                   </div>
                   <input
                     id="fullName"
@@ -136,7 +136,7 @@ export default function LoginPage() {
                     required={isSignUp}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full pl-14 pr-3 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    className="w-full pl-14 pr-3 py-2 text-sm text-foreground bg-white border border-border rounded-lg placeholder:text-[var(--fg-faint)] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                     placeholder="John Doe"
                   />
                 </div>
@@ -144,12 +144,12 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-2">
                 Email address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-slate-400" />
+                  <Mail className="h-5 w-5 text-[var(--fg-faint)]" />
                 </div>
                 <input
                   id="email"
@@ -157,19 +157,19 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-14 pr-3 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  className="w-full pl-14 pr-3 py-2 text-sm text-foreground bg-white border border-border rounded-lg placeholder:text-[var(--fg-faint)] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-slate-400" />
+                  <Lock className="h-5 w-5 text-[var(--fg-faint)]" />
                 </div>
                 <input
                   id="password"
@@ -177,7 +177,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-14 pr-3 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  className="w-full pl-14 pr-3 py-2 text-sm text-foreground bg-white border border-border rounded-lg placeholder:text-[var(--fg-faint)] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                   placeholder="••••••••"
                   minLength={6}
                 />
@@ -186,7 +186,7 @@ export default function LoginPage() {
 
             {isSignUp && (
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="role" className="block text-sm font-medium text-muted-foreground mb-2">
                   I want to join as a
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -195,8 +195,8 @@ export default function LoginPage() {
                     onClick={() => setRole('student')}
                     className={`px-4 py-3 text-sm font-medium rounded-lg border-2 transition-all ${
                       role === 'student'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        ? 'border-primary bg-accent text-primary'
+                        : 'border-border bg-white text-muted-foreground hover:border-[var(--line-strong)]'
                     }`}
                   >
                     Student
@@ -206,8 +206,8 @@ export default function LoginPage() {
                     onClick={() => setRole('mentor')}
                     className={`px-4 py-3 text-sm font-medium rounded-lg border-2 transition-all ${
                       role === 'mentor'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        ? 'border-primary bg-accent text-primary'
+                        : 'border-border bg-white text-muted-foreground hover:border-[var(--line-strong)]'
                     }`}
                   >
                     Mentor
@@ -233,10 +233,10 @@ export default function LoginPage() {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">Or continue with</span>
+                <span className="px-2 bg-white text-[var(--fg-faint)]">Or continue with</span>
               </div>
             </div>
 
@@ -275,12 +275,12 @@ export default function LoginPage() {
                 setIsSignUp(!isSignUp)
                 setMessage(null)
               }}
-              className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {isSignUp ? (
-                <>Already have an account? <span className="font-medium text-blue-600">Sign in</span></>
+                <>Already have an account? <span className="font-medium text-primary">Sign in</span></>
               ) : (
-                <>Don't have an account? <span className="font-medium text-blue-600">Sign up</span></>
+                <>Don't have an account? <span className="font-medium text-primary">Sign up</span></>
               )}
             </button>
           </div>
@@ -288,9 +288,9 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Hero */}
-      <div className="hidden lg:flex lg:flex-1 bg-slate-900 relative overflow-hidden">
+      <div className="hidden lg:flex lg:flex-1 bg-foreground relative overflow-hidden">
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-violet-600/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
 
         {/* Grid pattern */}
         <div
@@ -305,36 +305,36 @@ export default function LoginPage() {
           <h2 className="text-4xl font-semibold mb-6 tracking-tight text-white">
             Connect with expert mentors and accelerate your growth
           </h2>
-          <p className="text-lg text-slate-200 mb-8 leading-relaxed">
+          <p className="text-lg text-background/85 mb-8 leading-relaxed">
             Join thousands of professionals learning from industry leaders. Book 1-on-1 sessions and get personalized guidance for your career.
           </p>
 
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                 <CheckCircle className="w-4 h-4 text-white" />
               </div>
               <div>
                 <h3 className="font-semibold mb-1 text-white">World-class mentors</h3>
-                <p className="text-sm text-slate-300">Learn from engineers and leaders at top companies</p>
+                <p className="text-sm text-background/70">Learn from engineers and leaders at top companies</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                 <CheckCircle className="w-4 h-4 text-white" />
               </div>
               <div>
                 <h3 className="font-semibold mb-1 text-white">Flexible scheduling</h3>
-                <p className="text-sm text-slate-300">Book sessions at times that work for you</p>
+                <p className="text-sm text-background/70">Book sessions at times that work for you</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                 <CheckCircle className="w-4 h-4 text-white" />
               </div>
               <div>
                 <h3 className="font-semibold mb-1 text-white">Instant video calls</h3>
-                <p className="text-sm text-slate-300">Connect seamlessly through integrated Google Meet</p>
+                <p className="text-sm text-background/70">Connect seamlessly through integrated Google Meet</p>
               </div>
             </div>
           </div>

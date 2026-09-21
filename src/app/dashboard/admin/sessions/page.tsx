@@ -89,7 +89,7 @@ export default function AdminSessions() {
           requested_date, requested_start_time, start_time, end_time,
           duration_minutes, actual_duration_minutes, status, rejection_reason, meet_link,
           pre_work_reason, student_actionables, key_insights, post_session_submitted_at,
-          student_profiles:profiles!sessions_student_id_fkey(full_name),
+          student_profiles:profiles!bookings_student_id_fkey(full_name),
           mentor_profiles:profiles!sessions_mentor_id_fkey(full_name)
         `)
         .order('requested_date', { ascending: false })

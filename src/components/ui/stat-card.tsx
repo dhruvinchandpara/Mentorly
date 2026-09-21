@@ -20,27 +20,27 @@ export interface StatCardProps {
 
 const variantStyles = {
   default: {
-    card: 'bg-white border-slate-200',
-    icon: 'bg-blue-100 text-blue-600',
-    value: 'text-slate-900',
+    card: 'bg-card border-border',
+    icon: 'bg-accent text-accent-foreground',
+    value: 'text-foreground',
   },
   success: {
-    card: 'bg-gradient-to-br from-emerald-500 to-emerald-600 border-emerald-700 text-white',
+    card: 'bg-gradient-to-br from-success to-success/80 border-success/70 text-primary-foreground',
     icon: 'bg-white/20 text-white',
     value: 'text-white',
   },
   warning: {
-    card: 'bg-gradient-to-br from-amber-500 to-amber-600 border-amber-700 text-white',
+    card: 'bg-gradient-to-br from-warning to-warning/80 border-warning/70 text-primary-foreground',
     icon: 'bg-white/20 text-white',
     value: 'text-white',
   },
   danger: {
-    card: 'bg-gradient-to-br from-red-500 to-red-600 border-red-700 text-white',
+    card: 'bg-gradient-to-br from-destructive to-destructive/80 border-destructive/70 text-destructive-foreground',
     icon: 'bg-white/20 text-white',
     value: 'text-white',
   },
   info: {
-    card: 'bg-gradient-to-br from-blue-500 to-blue-600 border-blue-700 text-white',
+    card: 'bg-gradient-to-br from-info to-info/80 border-info/70 text-primary-foreground',
     icon: 'bg-white/20 text-white',
     value: 'text-white',
   },
@@ -79,7 +79,7 @@ export function StatCard({
           <p
             className={cn(
               'text-sm font-medium mb-1',
-              variant === 'default' ? 'text-slate-600' : 'text-white/80'
+              variant === 'default' ? 'text-muted-foreground' : 'text-white/80'
             )}
           >
             {title}
@@ -91,7 +91,7 @@ export function StatCard({
             <p
               className={cn(
                 'text-xs mt-2',
-                variant === 'default' ? 'text-slate-500' : 'text-white/70'
+                variant === 'default' ? 'text-[var(--fg-faint)]' : 'text-white/70'
               )}
             >
               {subtitle}
@@ -125,7 +125,7 @@ export function StatCard({
             <span
               className={cn(
                 'text-sm font-semibold',
-                trend.value > 0 ? 'text-emerald-600' : 'text-red-600',
+                trend.value > 0 ? 'text-success' : 'text-destructive',
                 variant !== 'default' && 'text-white'
               )}
             >
@@ -134,7 +134,7 @@ export function StatCard({
             <span
               className={cn(
                 'text-xs',
-                variant === 'default' ? 'text-slate-500' : 'text-white/70'
+                variant === 'default' ? 'text-[var(--fg-faint)]' : 'text-white/70'
               )}
             >
               {trend.label}

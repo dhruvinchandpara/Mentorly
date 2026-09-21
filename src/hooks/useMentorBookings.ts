@@ -35,7 +35,7 @@ export function useMentorBookings() {
         .select(`
           id, student_id, mentor_id, requested_date, requested_start_time, duration_minutes, actual_duration_minutes,
           status, meet_link, rejection_reason, pre_work_reason, student_actionables, key_insights,
-          student:profiles!sessions_student_id_fkey(full_name, email)
+          student:profiles!bookings_student_id_fkey(full_name, email)
         `)
         .eq('mentor_id', profile.id)
         .order('requested_date', { ascending: true })

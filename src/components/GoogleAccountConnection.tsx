@@ -87,7 +87,7 @@ export function GoogleAccountConnection({ userId, initialConnected = false }: Go
     return (
       <div className="border rounded-lg p-6 bg-white shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
           <span className="text-sm text-gray-600">Loading Google connection status...</span>
         </div>
       </div>
@@ -108,7 +108,7 @@ export function GoogleAccountConnection({ userId, initialConnected = false }: Go
               className={`p-3 rounded mb-4 text-sm ${
                 message.type === 'success'
                   ? 'bg-green-50 text-green-800 border border-green-200'
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                  : 'bg-[#F5E6DE] text-destructive border border-destructive/30'
               }`}
             >
               {message.text}
@@ -131,7 +131,7 @@ export function GoogleAccountConnection({ userId, initialConnected = false }: Go
                 <button
                   onClick={handleDisconnect}
                   disabled={isLoading}
-                  className="px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded border border-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm text-destructive hover:text-destructive hover:bg-[#F5E6DE] rounded border border-destructive disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? 'Disconnecting...' : 'Disconnect'}
                 </button>
@@ -140,7 +140,7 @@ export function GoogleAccountConnection({ userId, initialConnected = false }: Go
               <button
                 onClick={handleConnect}
                 disabled={isLoading}
-                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2 bg-primary text-white rounded hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

@@ -1,28 +1,29 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Newsreader, Manrope } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
 import { TestRoleSwitcher } from "@/components/ui/test-role-switcher";
 
-// Modern, professional sans-serif - exceptional for UI clarity
-const inter = Inter({
- variable: "--font-inter",
+// Display serif - headings, hero copy (Mesa brand pairing)
+const newsreader = Newsreader({
+ variable: "--font-newsreader",
  subsets: ["latin"],
  display: "swap",
- weight: ["400", "500", "600", "700"], // Reduced weights for faster loading
+ weight: ["400", "500", "600", "700"],
+ style: ["normal", "italic"],
  preload: true,
- fallback: ['system-ui', 'arial'],
+ fallback: ['Georgia', 'serif'],
 });
 
-// Sharp, modern monospace for code and data
-const jetbrainsMono = JetBrains_Mono({
- variable: "--font-jetbrains-mono",
+// Body sans - UI copy, labels (Mesa brand pairing)
+const manrope = Manrope({
+ variable: "--font-manrope",
  subsets: ["latin"],
  display: "swap",
- weight: ["400", "600"], // Reduced weights for faster loading
- preload: false, // Only preload primary font
- fallback: ['monospace'],
+ weight: ["400", "500", "600", "700", "800"],
+ preload: true,
+ fallback: ['system-ui', 'arial'],
 });
 
 export const metadata: Metadata = {
@@ -51,7 +52,7 @@ export default function RootLayout({
  return (
  <html lang="en" suppressHydrationWarning>
  <body
- className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
+ className={`${newsreader.variable} ${manrope.variable} antialiased`}
  suppressHydrationWarning
  >
  <AuthProvider>

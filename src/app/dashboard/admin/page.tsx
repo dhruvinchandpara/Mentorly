@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 type Metrics = {
   totalMentors: number
@@ -106,7 +107,7 @@ export default function AdminHome() {
           duration_minutes,
           status,
           meet_link,
-          student_profiles:profiles!sessions_student_id_fkey(full_name),
+          student_profiles:profiles!bookings_student_id_fkey(full_name),
           mentor_profiles:profiles!sessions_mentor_id_fkey(full_name)
         `)
         .eq('status', 'scheduled')
@@ -169,7 +170,7 @@ export default function AdminHome() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -188,8 +189,8 @@ export default function AdminHome() {
     <div className="space-y-8">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight mb-2">Dashboard</h1>
-        <p className="text-slate-600">
+        <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-2">Dashboard</h1>
+        <p className="text-muted-foreground">
           Welcome back. Here&apos;s an overview of your platform.
         </p>
       </div>
@@ -200,41 +201,41 @@ export default function AdminHome() {
           <div key={card.label} className="card-modern p-5 hover-lift">
             <div className="flex items-start justify-between mb-3">
               <div className={`w-10 h-10 rounded-lg ${
-                card.color === 'blue' ? 'bg-blue-50' :
-                card.color === 'amber' ? 'bg-amber-50' :
-                card.color === 'emerald' ? 'bg-emerald-50' :
-                card.color === 'violet' ? 'bg-violet-50' :
-                'bg-slate-100'
+                card.color === 'blue' ? 'bg-accent' :
+                card.color === 'amber' ? 'bg-warning-bg' :
+                card.color === 'emerald' ? 'bg-success-bg' :
+                card.color === 'violet' ? 'bg-info-bg' :
+                'bg-muted'
               } flex items-center justify-center`}>
                 <card.icon className={`w-5 h-5 ${
-                  card.color === 'blue' ? 'text-blue-600' :
-                  card.color === 'amber' ? 'text-amber-600' :
-                  card.color === 'emerald' ? 'text-emerald-600' :
-                  card.color === 'violet' ? 'text-violet-600' :
-                  'text-slate-600'
+                  card.color === 'blue' ? 'text-primary' :
+                  card.color === 'amber' ? 'text-warning' :
+                  card.color === 'emerald' ? 'text-success' :
+                  card.color === 'violet' ? 'text-info' :
+                  'text-muted-foreground'
                 }`} />
               </div>
               {card.change && (
-                <span className="text-xs font-medium text-emerald-600 flex items-center gap-0.5">
+                <span className="text-xs font-medium text-success flex items-center gap-0.5">
                   <ArrowUpRight className="w-3 h-3" />
                   {card.change}
                 </span>
               )}
             </div>
-            <p className="text-2xl font-semibold text-slate-900 mb-1">{card.value}</p>
-            <p className="text-sm text-slate-600">{card.label}</p>
+            <p className="text-2xl font-semibold text-foreground mb-1">{card.value}</p>
+            <p className="text-sm text-muted-foreground">{card.label}</p>
           </div>
         ))}
       </div>
 
       {/* Ongoing Sessions */}
       {ongoingSessions.length > 0 && (
-        <Card className="border-red-200 bg-red-50/50">
+        <Card className="border-destructive bg-[#F5E6DE]/50">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <CardTitle className="text-base font-semibold text-slate-900">Live Sessions</CardTitle>
-              <Badge variant="destructive" className="ml-auto">
+              <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+              <CardTitle className="text-base font-semibold text-foreground">Live Sessions</CardTitle>
+              <Badge variant="secondary" className="ml-auto">
                 {ongoingSessions.length} active
               </Badge>
             </div>
@@ -242,21 +243,21 @@ export default function AdminHome() {
           <CardContent>
             <div className="space-y-3">
               {ongoingSessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-4 bg-white border border-red-200 rounded-lg">
+                <div key={session.id} className="flex items-center justify-between p-4 bg-white border border-destructive rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#F5E6DE] text-destructive flex items-center justify-center">
                       <Video className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {session.studentName} <span className="font-normal text-slate-500">·</span> {session.mentorName}
+                      <p className="text-sm font-medium text-foreground">
+                        {session.studentName} <span className="font-normal text-[var(--fg-faint)]">·</span> {session.mentorName}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                         {formatTime(session.startTime)} – {formatTime(session.endTime)} · {session.duration} min
                       </p>
                     </div>
                   </div>
-                  <Badge variant="destructive" className="animate-pulse">Live</Badge>
+                  <StatusBadge variant="live" pulse>Live</StatusBadge>
                 </div>
               ))}
             </div>
@@ -268,7 +269,7 @@ export default function AdminHome() {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-slate-900">Upcoming Sessions</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Upcoming Sessions</CardTitle>
             <Badge variant="secondary" className="text-xs">
               {upcomingSessions.length} scheduled
             </Badge>
@@ -277,33 +278,32 @@ export default function AdminHome() {
         <CardContent>
           {upcomingSessions.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                <CalendarCheck className="w-6 h-6 text-slate-400" />
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                <CalendarCheck className="w-6 h-6 text-[var(--fg-faint)]" />
               </div>
-              <p className="text-sm text-slate-600">No upcoming sessions.</p>
+              <p className="text-sm text-muted-foreground">No upcoming sessions.</p>
             </div>
           ) : (
             <>
               <div className="space-y-3">
                 {displayedUpcoming.map((session) => (
-                  <div key={session.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                  <div key={session.id} className="flex items-center justify-between p-4 bg-secondary border border-border rounded-lg hover:bg-muted transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-600 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white border-2 border-border text-muted-foreground flex items-center justify-center">
                         <CalendarCheck className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">
-                          {session.studentName} <span className="font-normal text-slate-500">·</span> {session.mentorName}
+                        <p className="text-sm font-medium text-foreground">
+                          {session.studentName} <span className="font-normal text-[var(--fg-faint)]">·</span> {session.mentorName}
                         </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                           {formatDate(session.startTime)} · {formatTime(session.startTime)} – {formatTime(session.endTime)} · {session.duration} min
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-slate-600 border-slate-300">
-                      <Clock className="w-3 h-3 mr-1" />
+                    <StatusBadge variant="upcoming" size="sm">
                       Scheduled
-                    </Badge>
+                    </StatusBadge>
                   </div>
                 ))}
               </div>
@@ -311,7 +311,7 @@ export default function AdminHome() {
               {upcomingSessions.length > 5 && (
                 <button
                   onClick={() => setShowAllUpcoming(!showAllUpcoming)}
-                  className="w-full mt-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                  className="w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showAllUpcoming ? 'Show Less' : `Show All (${upcomingSessions.length})`}
                 </button>

@@ -51,8 +51,8 @@ export default function SettingsPage() {
     <div className="max-w-2xl space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight mb-2">Settings</h1>
-        <p className="text-slate-600">
+        <h1 className="text-3xl font-display font-semibold text-foreground tracking-tight mb-2">Settings</h1>
+        <p className="text-muted-foreground">
           Update your password and security preferences
         </p>
       </div>
@@ -61,7 +61,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Key className="w-4 h-4 text-blue-600" />
+            <Key className="w-4 h-4 text-primary" />
             Change Password
           </CardTitle>
         </CardHeader>
@@ -70,8 +70,8 @@ export default function SettingsPage() {
             {message && (
               <div className={`flex items-center gap-3 p-4 rounded-lg text-sm border ${
                 message.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-red-50 text-red-700 border-red-200'
+                  ? 'bg-success-bg text-success border-success/30'
+                  : 'bg-accent text-destructive border-destructive/30'
               }`}>
                 {message.type === 'success' ? (
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
@@ -83,7 +83,7 @@ export default function SettingsPage() {
             )}
 
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="currentPassword" className="block text-sm font-medium text-muted-foreground mb-2">
                 Current Password
               </label>
               <input
@@ -97,7 +97,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="newPassword" className="block text-sm font-medium text-muted-foreground mb-2">
                 New Password
               </label>
               <input
@@ -113,7 +113,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-muted-foreground mb-2">
                 Confirm New Password
               </label>
               <input
@@ -129,7 +129,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="pt-4">
-              <Button type="submit" disabled={loading} className="btn-primary">
+              <Button type="submit" disabled={loading} className="bg-[#0F1919] text-[#FFFBF3] hover:bg-[#1C2C2C] shadow-none">
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />

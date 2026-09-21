@@ -63,7 +63,7 @@ export default function StudentHome() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     )
   }
@@ -72,21 +72,21 @@ export default function StudentHome() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight mb-2">
+        <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-2">
           Welcome back, {profile?.full_name?.split(' ')[0]}
         </h1>
-        <p className="text-slate-600">
+        <p className="text-muted-foreground">
           Manage your mentorship sessions and connect with expert mentors
         </p>
       </div>
 
       {/* 1. Pending Admin Approvals Banner */}
       {pendingSessions.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
+        <Card className="border-warning/30 bg-warning-bg/50">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
-              <CardTitle className="text-base font-semibold text-amber-900">
+              <Clock className="w-4 h-4 text-warning animate-pulse" />
+              <CardTitle className="text-base font-semibold text-warning">
                 Session Requests Awaiting Admin Review ({pendingSessions.length})
               </CardTitle>
             </div>
@@ -94,12 +94,12 @@ export default function StudentHome() {
           <CardContent>
             <div className="space-y-3">
               {pendingSessions.map((booking) => (
-                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-amber-200 rounded-lg gap-2">
+                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-warning/30 rounded-lg gap-2">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-foreground">
                       Requested session with {booking.mentors.profiles.full_name}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                       {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes} min)
                     </p>
                   </div>
@@ -115,11 +115,11 @@ export default function StudentHome() {
 
       {/* 2. Rejected Requests Alert Banner */}
       {rejectedSessions.length > 0 && (
-        <Card className="border-rose-200 bg-rose-50/50">
+        <Card className="border-destructive/30 bg-[#F5E6DE]/50">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-rose-600" />
-              <CardTitle className="text-base font-semibold text-rose-900">
+              <XCircle className="w-4 h-4 text-destructive" />
+              <CardTitle className="text-base font-semibold text-destructive">
                 Rejected Meeting Requests ({rejectedSessions.length})
               </CardTitle>
             </div>
@@ -127,18 +127,18 @@ export default function StudentHome() {
           <CardContent>
             <div className="space-y-3">
               {rejectedSessions.map((booking) => (
-                <div key={booking.id} className="p-4 bg-white border border-rose-200 rounded-lg space-y-1">
+                <div key={booking.id} className="p-4 bg-white border border-destructive/30 rounded-lg space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-rose-900">
+                    <p className="text-sm font-semibold text-destructive">
                       Meeting request with {booking.mentors.profiles.full_name} was rejected
                     </p>
                     <StatusBadge variant="rejected">Rejected</StatusBadge>
                   </div>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-muted-foreground">
                     {formatDate(booking.start_time)} at {formatTime(booking.start_time)}
                   </p>
                   {booking.rejection_reason && (
-                    <p className="text-xs text-rose-700 font-medium bg-rose-50 p-2 rounded mt-1">
+                    <p className="text-xs text-destructive font-medium bg-[#F5E6DE] p-2 rounded mt-1">
                       Reason: {booking.rejection_reason}
                     </p>
                   )}
@@ -151,11 +151,11 @@ export default function StudentHome() {
 
       {/* 3. Ongoing Sessions */}
       {ongoingSessions.length > 0 && (
-        <Card className="border-red-200 bg-red-50/50">
+        <Card className="border-destructive/30 bg-[#F5E6DE]/50">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <CardTitle className="text-base font-semibold text-slate-900">Ongoing Sessions</CardTitle>
+              <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+              <CardTitle className="text-base font-semibold text-foreground">Ongoing Sessions</CardTitle>
               <Badge variant="destructive" className="ml-auto">
                 {ongoingSessions.length} active
               </Badge>
@@ -164,16 +164,16 @@ export default function StudentHome() {
           <CardContent>
             <div className="space-y-3">
               {ongoingSessions.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-4 bg-white border border-red-200 rounded-lg">
+                <div key={booking.id} className="flex items-center justify-between p-4 bg-white border border-destructive/30 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#F5E6DE] text-destructive flex items-center justify-center">
                       <Video className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm font-medium text-foreground">
                         {booking.mentors.profiles.full_name}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                         {formatTime(booking.start_time)} – {formatTime(booking.end_time)} · {booking.duration_minutes} min
                       </p>
                     </div>
@@ -183,7 +183,7 @@ export default function StudentHome() {
                       href={booking.meet_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-primary"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full shadow-sm transition-colors"
                     >
                       Join Now
                     </a>
@@ -199,7 +199,7 @@ export default function StudentHome() {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-slate-900">Next Upcoming Sessions</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Next Upcoming Sessions</CardTitle>
             {upcomingSessions.length > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {upcomingSessions.length} scheduled
@@ -210,10 +210,10 @@ export default function StudentHome() {
         <CardContent>
           {upcomingSessions.length === 0 ? (
             <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                <Calendar className="w-6 h-6 text-slate-400" />
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                <Calendar className="w-6 h-6 text-[var(--fg-faint)]" />
               </div>
-              <p className="text-sm text-slate-600">No upcoming approved sessions scheduled.</p>
+              <p className="text-sm text-muted-foreground">No upcoming approved sessions scheduled.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -223,19 +223,19 @@ export default function StudentHome() {
 
                 return (
                   <div key={booking.id} className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                    isReady ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'
+                    isReady ? 'bg-warning-bg border-warning/30' : 'bg-secondary border-border'
                   }`}>
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        isReady ? 'bg-amber-100 text-amber-600' : 'bg-white border-2 border-slate-200 text-slate-600'
+                        isReady ? 'bg-warning-bg text-warning' : 'bg-white border-2 border-border text-muted-foreground'
                       }`}>
                         {isReady ? <Radio className="w-5 h-5" /> : <Video className="w-5 h-5" />}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">
+                        <p className="text-sm font-medium text-foreground">
                           {booking.mentors.profiles.full_name}
                         </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                           {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
                         </p>
                       </div>
@@ -247,13 +247,13 @@ export default function StudentHome() {
                             href={booking.meet_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn-primary"
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full shadow-sm transition-colors"
                           >
                             Get Ready
                           </a>
                         )
                       ) : (
-                        <Badge variant="outline" className="text-slate-600 border-slate-300">
+                        <Badge variant="outline" className="text-muted-foreground border-border">
                           <Clock className="w-3 h-3 mr-1" />
                           Approved & Scheduled
                         </Badge>
@@ -268,18 +268,21 @@ export default function StudentHome() {
       </Card>
 
       {/* 5. Find Mentor CTA */}
-      <Card className="bg-gradient-to-br from-blue-50 to-violet-50 border-blue-200">
+      <Card className="bg-gradient-to-br from-accent to-secondary border-primary/30">
         <CardContent className="p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-[var(--primary-hover)] flex items-center justify-center mx-auto mb-4">
             <ArrowRight className="w-8 h-8 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">
+          <div className="text-xl font-semibold text-foreground mb-2">
             Ready to learn something new?
-          </h3>
-          <p className="text-slate-600 max-w-md mx-auto mb-6">
+          </div>
+          <p className="text-muted-foreground max-w-md mx-auto mb-6">
             Browse our expert mentors and book your next session to accelerate your growth
           </p>
-          <Link href="/dashboard/student/explore" className="btn-primary inline-flex items-center gap-2">
+          <Link
+            href="/dashboard/student/explore"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full shadow-sm transition-colors"
+          >
             Find a Mentor
             <ArrowRight className="w-4 h-4" />
           </Link>

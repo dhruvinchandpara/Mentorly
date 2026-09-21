@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { useMentorBookings } from '@/hooks/useMentorBookings'
 
 function getSessionState(startTime: string, endTime: string) {
@@ -74,7 +75,7 @@ export default function MentorDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -89,8 +90,8 @@ export default function MentorDashboard() {
     <div className="space-y-8">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight mb-2">Dashboard</h1>
-        <p className="text-slate-600">
+        <h1 className="text-3xl font-display font-semibold text-foreground tracking-tight mb-2">Dashboard</h1>
+        <p className="text-muted-foreground">
           Welcome back, {profile?.full_name}. Here's an overview of your mentorship sessions.
         </p>
       </div>
@@ -101,31 +102,31 @@ export default function MentorDashboard() {
           <div key={card.label} className="card-modern p-5 hover-lift">
             <div className="flex items-start justify-between mb-3">
               <div className={`w-10 h-10 rounded-lg ${
-                card.color === 'blue' ? 'bg-blue-50' :
-                card.color === 'emerald' ? 'bg-emerald-50' :
-                'bg-violet-50'
+                card.color === 'blue' ? 'bg-accent' :
+                card.color === 'emerald' ? 'bg-success-bg' :
+                'bg-info-bg'
               } flex items-center justify-center`}>
                 <card.icon className={`w-5 h-5 ${
-                  card.color === 'blue' ? 'text-blue-600' :
-                  card.color === 'emerald' ? 'text-emerald-600' :
-                  'text-violet-600'
+                  card.color === 'blue' ? 'text-primary' :
+                  card.color === 'emerald' ? 'text-success' :
+                  'text-info'
                 }`} />
               </div>
             </div>
-            <p className="text-2xl font-semibold text-slate-900 mb-1">{card.value}</p>
-            <p className="text-sm text-slate-600">{card.label}</p>
+            <p className="text-2xl font-semibold text-foreground mb-1">{card.value}</p>
+            <p className="text-sm text-muted-foreground">{card.label}</p>
           </div>
         ))}
       </div>
 
       {/* Live Sessions */}
       {liveBookings.length > 0 && (
-        <Card className="border-red-200 bg-red-50/50">
+        <Card className="border-destructive/30 bg-accent/50">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <CardTitle className="text-base font-semibold text-slate-900">Live Sessions</CardTitle>
-              <Badge variant="destructive" className="ml-auto">
+              <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+              <CardTitle className="text-base font-semibold text-foreground">Live Sessions</CardTitle>
+              <Badge variant="secondary" className="ml-auto">
                 {liveBookings.length} active
               </Badge>
             </div>
@@ -133,14 +134,14 @@ export default function MentorDashboard() {
           <CardContent>
             <div className="space-y-3">
               {liveBookings.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-4 bg-white border border-red-200 rounded-lg">
+                <div key={booking.id} className="flex items-center justify-between p-4 bg-card border border-destructive/30 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-accent text-destructive flex items-center justify-center">
                       <Video className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{booking.profiles.full_name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-sm font-medium text-foreground">{booking.profiles.full_name}</p>
+                      <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                         {formatTime(booking.start_time)} – {formatTime(booking.end_time)} · {booking.duration_minutes} min
                       </p>
                     </div>
@@ -150,7 +151,7 @@ export default function MentorDashboard() {
                       href={booking.meet_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-primary"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full shadow-sm transition-colors"
                     >
                       Join Call
                     </a>
@@ -164,12 +165,12 @@ export default function MentorDashboard() {
 
       {/* Ready Sessions (Starting in 5 min) */}
       {readyBookings.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
+        <Card className="border-warning/30 bg-warning-bg/50">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <CardTitle className="text-base font-semibold text-slate-900">Starting Soon</CardTitle>
-              <Badge variant="secondary" className="ml-auto bg-amber-100 text-amber-700 border-amber-200">
+              <Clock className="w-4 h-4 text-warning" />
+              <CardTitle className="text-base font-semibold text-foreground">Starting Soon</CardTitle>
+              <Badge variant="secondary" className="ml-auto bg-warning-bg text-warning border-warning/30">
                 {readyBookings.length} ready
               </Badge>
             </div>
@@ -177,14 +178,14 @@ export default function MentorDashboard() {
           <CardContent>
             <div className="space-y-3">
               {readyBookings.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-4 bg-white border border-amber-200 rounded-lg">
+                <div key={booking.id} className="flex items-center justify-between p-4 bg-card border border-warning/30 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-warning-bg text-warning flex items-center justify-center">
                       <Radio className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{booking.profiles.full_name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-sm font-medium text-foreground">{booking.profiles.full_name}</p>
+                      <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                         Starts at {formatTime(booking.start_time)} · {booking.duration_minutes} min
                       </p>
                     </div>
@@ -194,7 +195,7 @@ export default function MentorDashboard() {
                       href={booking.meet_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-primary"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[#FFFBF3] bg-[#0F1919] hover:bg-[#1C2C2C] rounded-full shadow-sm transition-colors"
                     >
                       Get Ready
                     </a>
@@ -212,7 +213,7 @@ export default function MentorDashboard() {
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-slate-900">Upcoming Sessions</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Upcoming Sessions</CardTitle>
               <Badge variant="secondary" className="text-xs">
                 {upcomingBookings.length} scheduled
               </Badge>
@@ -221,30 +222,29 @@ export default function MentorDashboard() {
           <CardContent>
             {upcomingBookings.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                  <Calendar className="w-6 h-6 text-slate-400" />
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                  <Calendar className="w-6 h-6 text-[var(--fg-faint)]" />
                 </div>
-                <p className="text-sm text-slate-600">No upcoming sessions.</p>
+                <p className="text-sm text-muted-foreground">No upcoming sessions.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {upcomingBookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                  <div key={booking.id} className="flex items-center justify-between p-4 bg-muted border border-border rounded-lg hover:bg-accent transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-600 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-card border-2 border-border text-muted-foreground flex items-center justify-center">
                         <Users className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{booking.profiles.full_name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-sm font-medium text-foreground">{booking.profiles.full_name}</p>
+                        <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                           {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)} · {booking.duration_minutes} min
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-slate-600 border-slate-300">
-                      <Clock className="w-3 h-3 mr-1" />
+                    <StatusBadge variant="upcoming" size="sm">
                       Scheduled
-                    </Badge>
+                    </StatusBadge>
                   </div>
                 ))}
               </div>
@@ -254,14 +254,14 @@ export default function MentorDashboard() {
 
         {/* Sessions Needing Review - Mark as Completed */}
         {pendingCompletionBookings.length > 0 && (
-          <Card className="border-amber-200 bg-amber-50/30">
+          <Card className="border-warning/30 bg-warning-bg/30">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-600" />
-                  <CardTitle className="text-base font-semibold text-slate-900">Mark as Completed</CardTitle>
+                  <Clock className="w-4 h-4 text-warning" />
+                  <CardTitle className="text-base font-semibold text-foreground">Mark as Completed</CardTitle>
                 </div>
-                <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200">
+                <Badge variant="secondary" className="bg-warning-bg text-warning border-warning/30">
                   {pendingCompletionBookings.length} to review
                 </Badge>
               </div>
@@ -269,14 +269,14 @@ export default function MentorDashboard() {
             <CardContent>
               <div className="space-y-3 mb-4">
                 {pendingCompletionBookings.slice(0, 3).map((booking) => (
-                  <div key={booking.id} className="flex flex-col gap-3 p-4 bg-white border border-amber-200 rounded-lg">
+                  <div key={booking.id} className="flex flex-col gap-3 p-4 bg-card border border-warning/30 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-warning-bg text-warning flex items-center justify-center font-bold text-sm flex-shrink-0">
                         {booking.profiles.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{booking.profiles.full_name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-sm font-medium text-foreground">{booking.profiles.full_name}</p>
+                        <p className="text-xs text-[var(--fg-faint)] mt-0.5">
                           {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
                         </p>
                       </div>
@@ -284,7 +284,7 @@ export default function MentorDashboard() {
                     <button
                       onClick={() => markCompleted(booking.id)}
                       disabled={markingCompleteId === booking.id}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#0F1919] hover:bg-[#1C2C2C] disabled:opacity-60 text-[#FFFBF3] rounded-full text-sm font-medium transition-colors"
                     >
                       {markingCompleteId === booking.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -312,17 +312,17 @@ export default function MentorDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link href="/dashboard/mentor/sessions" className="btn-secondary justify-between p-5 h-auto">
           <div>
-            <h3 className="text-base font-semibold text-slate-900 mb-1">View All Sessions</h3>
-            <p className="text-sm text-slate-600">Manage your complete session history</p>
+            <p className="text-base font-semibold text-foreground mb-1">View All Sessions</p>
+            <p className="text-sm text-muted-foreground">Manage your complete session history</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-slate-400" />
+          <ArrowRight className="w-5 h-5 text-[var(--fg-faint)]" />
         </Link>
         <Link href="/dashboard/mentor/availability" className="btn-secondary justify-between p-5 h-auto">
           <div>
-            <h3 className="text-base font-semibold text-slate-900 mb-1">Manage Availability</h3>
-            <p className="text-sm text-slate-600">Update your schedule and time slots</p>
+            <p className="text-base font-semibold text-foreground mb-1">Manage Availability</p>
+            <p className="text-sm text-muted-foreground">Update your schedule and time slots</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-slate-400" />
+          <ArrowRight className="w-5 h-5 text-[var(--fg-faint)]" />
         </Link>
       </div>
     </div>

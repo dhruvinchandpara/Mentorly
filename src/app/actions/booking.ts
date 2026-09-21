@@ -3,15 +3,16 @@
 import { createAdminClient, getAdminUserId } from '@/lib/supabase/admin'
 import { createGoogleMeetingWithOAuth } from '@/lib/google-calendar-oauth'
 import { isGoogleConnected } from '@/lib/google-oauth'
+import { validateBookingForm, type DurationOption } from '@/lib/booking-validation'
 
 export type BookingInput = {
  mentorId: string
  studentId: string
  startTime: string // ISO string in UTC
  endTime: string // ISO string in UTC
- durationMinutes: number // Must be multiple of 15 (15, 30, 45, 60, etc.)
+ durationMinutes: DurationOption
  slotCount?: number // Number of consecutive 15-min slots (defaults to durationMinutes / 15)
- preWorkReason?: string
+ preWorkReason: string
 }
 
 // Helper function to ensure times are in UTC/ISO format
@@ -24,16 +25,19 @@ function ensureUTC(dateString: string): string {
 }
 
 export async function processBooking(input: BookingInput) {
- try {
- const supabase = createAdminClient()
-
- // Validate duration is in 15-minute increments
- if (input.durationMinutes % 15 !== 0 || input.durationMinutes < 15) {
+ const validation = validateBookingForm({
+ preWorkReason: input.preWorkReason,
+ durationMinutes: input.durationMinutes,
+ })
+ if (!validation.valid) {
  return {
  success: false,
- error: 'Booking duration must be in 15-minute increments (15, 30, 45, 60, etc.)',
+ error: validation.error,
  }
  }
+
+ try {
+ const supabase = createAdminClient()
 
  // Calculate slot count if not provided
  const slotCount = input.slotCount || Math.floor(input.durationMinutes / 15)
@@ -89,7 +93,7 @@ export async function processBooking(input: BookingInput) {
  // 3. Create session/booking record
  const requestedDate = new Date(startTimeUTC).toISOString().split('T')[0]
  const requestedStartTime = new Date(startTimeUTC).toISOString().split('T')[1].substring(0, 8)
- const preWorkReason = input.preWorkReason || 'General mentorship session'
+ const preWorkReason = input.preWorkReason
 
  let newBooking: any = null
  let bookingErr: any = null

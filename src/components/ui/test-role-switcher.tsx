@@ -39,46 +39,46 @@ export function TestRoleSwitcher() {
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-3 bg-white border border-blue-200 shadow-2xl rounded-2xl overflow-hidden w-48 animate-in fade-in slide-in-from-bottom-2">
-          <div className="bg-slate-50 px-4 py-3 border-b border-blue-100 flex flex-col gap-1">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Test Mode</span>
-            <span className="text-sm font-semibold text-blue-950">Switch Role</span>
+        <div className="absolute bottom-full right-0 mb-3 bg-card border border-border shadow-2xl rounded-2xl overflow-hidden w-48 animate-in fade-in slide-in-from-bottom-2">
+          <div className="bg-secondary px-4 py-3 border-b border-border flex flex-col gap-1">
+            <span className="text-xs font-bold text-[var(--fg-faint)] uppercase tracking-wider">Test Mode</span>
+            <span className="text-sm font-semibold text-foreground">Switch Role</span>
           </div>
-          
+
           <div className="p-2 space-y-1">
             <button
               onClick={() => handleSwitchRole('student')}
               disabled={isSwitching}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 profile.role === 'student'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-primary'
               }`}
             >
               <GraduationCap className="w-4 h-4" />
               Student
             </button>
-            
+
             <button
               onClick={() => handleSwitchRole('mentor')}
               disabled={isSwitching}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 profile.role === 'mentor'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-primary'
               }`}
             >
               <Users className="w-4 h-4" />
               Mentor
             </button>
-            
+
             <button
               onClick={() => handleSwitchRole('admin')}
               disabled={isSwitching}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 profile.role === 'admin'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-primary'
               }`}
             >
               <Shield className="w-4 h-4" />
@@ -90,7 +90,7 @@ export function TestRoleSwitcher() {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-slate-900 hover:bg-black text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-slate-900/30"
+        className="w-14 h-14 bg-foreground hover:brightness-90 text-background rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-foreground/30"
       >
         {isSwitching ? (
           <Loader2 className="w-6 h-6 animate-spin" />

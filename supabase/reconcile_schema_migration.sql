@@ -81,6 +81,21 @@ BEGIN
   END IF;
 END $$;
 
+-- Drop legacy RLS policies BEFORE the status column type conversion below.
+-- Postgres blocks ALTER COLUMN ... TYPE while any policy references the
+-- column; these are the actual policy names present on the live table
+-- (Step 7 re-creates fresh, differently-named policies with the same intent).
+DROP POLICY IF EXISTS "Admins can update any booking" ON public.sessions;
+DROP POLICY IF EXISTS "Admins can view all bookings" ON public.sessions;
+DROP POLICY IF EXISTS "Mentors can update their bookings" ON public.sessions;
+DROP POLICY IF EXISTS "Students can insert bookings" ON public.sessions;
+DROP POLICY IF EXISTS "Users can view their own bookings (as student or mentor)" ON public.sessions;
+
+-- Drop the legacy partial index too: its WHERE predicate is bound to the
+-- old booking_status enum, and rebuilding it during ALTER COLUMN ... TYPE
+-- below fails with "operator does not exist: session_status = booking_status".
+DROP INDEX IF EXISTS public.idx_bookings_mentor_time;
+
 -- Add new target columns to sessions table
 ALTER TABLE public.sessions
   ADD COLUMN IF NOT EXISTS pre_work_reason text,
@@ -175,6 +190,12 @@ CREATE INDEX IF NOT EXISTS idx_sessions_student_mentor_history
 CREATE INDEX IF NOT EXISTS idx_sessions_status ON public.sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sessions_mentor ON public.sessions(mentor_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_student ON public.sessions(student_id);
+
+-- Recreate the mentor/time overlap-detection index dropped above, updated
+-- for the new session_status values ('pending' -> 'requested').
+CREATE INDEX IF NOT EXISTS idx_sessions_mentor_time
+  ON public.sessions (mentor_id, start_time, end_time)
+  WHERE status IN ('scheduled', 'requested');
 
 -- Backward-compatibility view for any legacy code expecting 'bookings'
 CREATE OR REPLACE VIEW public.bookings AS

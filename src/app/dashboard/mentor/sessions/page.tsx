@@ -7,7 +7,7 @@ import {
   Loader2, Search, AlertCircle, ExternalLink, BookOpen, User, X, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SessionNotePanel } from '@/components/ui/session-note-panel'
@@ -212,7 +212,7 @@ export default function SessionsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -221,30 +221,30 @@ export default function SessionsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Sessions</h1>
-        <p className="text-slate-600 text-sm mt-1">
+        <h1 className="text-3xl font-display font-semibold text-foreground tracking-tight">Sessions</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           View and manage all your mentoring sessions.
         </p>
       </div>
 
       {/* Student Profile Modal */}
       {selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm" onClick={() => setSelectedStudent(null)}>
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/60 backdrop-blur-sm" onClick={() => setSelectedStudent(null)}>
+          <div className="relative w-full max-w-2xl bg-card rounded-2xl shadow-2xl border border-border" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+            <div className="flex items-center justify-between p-6 border-b border-border">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-[var(--primary-hover)] flex items-center justify-center text-white font-bold text-xl">
                   {(selectedStudent.profiles?.full_name || 'S').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-semibold text-slate-900">{selectedStudent.profiles?.full_name || 'Unknown Student'}</h2>
-                  <p className="text-sm text-slate-600">{selectedStudent.profiles?.email}</p>
+                  <p className="text-2xl font-semibold text-foreground">{selectedStudent.profiles?.full_name || 'Unknown Student'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedStudent.profiles?.email}</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedStudent(null)}
-                className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -254,19 +254,19 @@ export default function SessionsPage() {
             <div className="p-6 space-y-6">
               {/* Bio Section */}
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                  <User className="w-4 h-4 text-blue-600" />
+                <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2 uppercase tracking-wider">
+                  <User className="w-4 h-4 text-primary" />
                   About This Student
-                </h3>
+                </p>
                 {selectedStudent.students?.bio ? (
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  <div className="bg-muted rounded-xl p-4 border border-border">
+                    <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
                       {selectedStudent.students.bio}
                     </p>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-300 text-center">
-                    <p className="text-sm text-slate-500 italic">
+                  <div className="bg-muted rounded-xl p-4 border border-dashed border-[var(--line-strong)] text-center">
+                    <p className="text-sm text-muted-foreground italic">
                       This student hasn't added a bio yet.
                     </p>
                   </div>
@@ -275,18 +275,18 @@ export default function SessionsPage() {
 
               {/* Session Info */}
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                  <Calendar className="w-4 h-4 text-blue-600" />
+                <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2 uppercase tracking-wider">
+                  <Calendar className="w-4 h-4 text-primary" />
                   Session Details
-                </h3>
-                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 space-y-2">
+                </p>
+                <div className="bg-accent rounded-xl p-4 border border-accent space-y-2">
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-blue-700" />
-                    <span className="font-medium text-blue-900">{formatDate(selectedStudent.start_time)}</span>
+                    <Calendar className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-accent-foreground">{formatDate(selectedStudent.start_time)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-blue-700" />
-                    <span className="text-blue-900">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span className="text-accent-foreground">
                       {formatTime(selectedStudent.start_time)} – {formatTime(selectedStudent.end_time)} ({selectedStudent.duration_minutes} min)
                     </span>
                   </div>
@@ -296,7 +296,7 @@ export default function SessionsPage() {
                         href={selectedStudent.meet_link}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#0F1919] hover:bg-[#1C2C2C] text-[#FFFBF3] rounded-full text-sm font-semibold transition-colors"
                       >
                         <Video className="w-4 h-4" />
                         Join Meeting
@@ -309,7 +309,7 @@ export default function SessionsPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-slate-200 flex justify-end">
+            <div className="p-6 border-t border-border flex justify-end">
               <Button onClick={() => setSelectedStudent(null)} variant="outline">
                 Close
               </Button>
@@ -320,11 +320,11 @@ export default function SessionsPage() {
 
       {/* Ongoing Sessions (Always at top if exists) */}
       {ongoingSessions.length > 0 && (
-        <Card className="border-red-200 bg-red-50/30">
+        <Card className="border-destructive/30 bg-accent/30">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Radio className="w-4 h-4 text-red-500 animate-pulse" />
-              <CardTitle className="text-base text-blue-950">Live Now - Ongoing Session</CardTitle>
+              <Radio className="w-4 h-4 text-destructive animate-pulse" />
+              <CardTitle className="text-base text-foreground">Live Now - Ongoing Session</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -332,17 +332,17 @@ export default function SessionsPage() {
               const studentName = session.profiles?.full_name || 'Unknown Student'
               const note = session.session_notes?.[0] ?? null
               return (
-                <div key={session.id} className="p-4 bg-white border border-red-200 rounded-xl shadow-sm space-y-3">
+                <div key={session.id} className="p-4 bg-card border border-destructive/30 rounded-xl shadow-sm space-y-3">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="space-y-2">
-                      <p className="text-lg font-semibold text-blue-950">
+                      <p className="text-lg font-semibold text-foreground">
                         🎥 Session with {studentName}
                       </p>
-                      <p className="text-sm text-slate-600 flex items-center gap-2">
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                       </p>
-                      <p className="text-sm text-red-700 font-medium flex items-center gap-2">
+                      <p className="text-sm text-destructive font-medium flex items-center gap-2">
                         <AlertCircle className="w-4 h-4" />
                         ⏰ {getRemainingTime(session.end_time)}
                       </p>
@@ -352,7 +352,7 @@ export default function SessionsPage() {
                         href={session.meet_link}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-base font-bold shadow-lg shadow-green-500/30 animate-pulse transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-success hover:opacity-90 text-white rounded-xl text-base font-bold shadow-lg shadow-success/30 animate-pulse transition-all"
                       >
                         <Video className="w-5 h-5" />
                         Join Call Now
@@ -377,13 +377,13 @@ export default function SessionsPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-3 border-b border-slate-200">
+      <div className="flex items-center gap-3 border-b border-border">
         <button
           onClick={() => setActiveTab('upcoming')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'upcoming'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
+              ? 'border-[#0F1919] text-[#0F1919]'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           Upcoming ({filteredUpcoming.length})
@@ -392,8 +392,8 @@ export default function SessionsPage() {
           onClick={() => setActiveTab('pending')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'pending'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
+              ? 'border-[#0F1919] text-[#0F1919]'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           Pending Review ({filteredPending.length})
@@ -402,8 +402,8 @@ export default function SessionsPage() {
           onClick={() => setActiveTab('history')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'history'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
+              ? 'border-[#0F1919] text-[#0F1919]'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           History ({filteredHistory.length})
@@ -412,7 +412,7 @@ export default function SessionsPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-faint)]" />
         <Input
           placeholder="Search by student name..."
           value={searchQuery}
@@ -430,8 +430,8 @@ export default function SessionsPage() {
           <CardContent>
             {filteredUpcoming.length === 0 ? (
               <div className="text-center py-12">
-                <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">
+                <Calendar className="w-12 h-12 text-[var(--fg-faint)] mx-auto mb-3" />
+                <p className="text-sm text-[var(--fg-faint)]">
                   {searchQuery ? 'No sessions match your search.' : 'No upcoming sessions. Students can book you based on your availability.'}
                 </p>
               </div>
@@ -444,27 +444,27 @@ export default function SessionsPage() {
                     const isReady = state === 'ready'
 
                     return (
-                      <div key={session.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                      <div key={session.id} className="p-4 bg-muted border border-border rounded-lg hover:bg-accent transition-colors">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => setSelectedStudent(session)}
-                              className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm hover:bg-blue-200 transition-colors cursor-pointer"
+                              className="w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center font-bold text-sm hover:opacity-80 transition-colors cursor-pointer"
                             >
                               {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </button>
                             <div>
                               <button
                                 onClick={() => setSelectedStudent(session)}
-                                className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                                className="text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
                               >
                                 {studentName}
                               </button>
-                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(session.start_time)}
                               </p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                               </p>
@@ -476,7 +476,7 @@ export default function SessionsPage() {
                                 href={session.meet_link}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                                className="px-4 py-2 bg-success hover:opacity-90 text-white rounded-lg text-sm font-semibold shadow-sm"
                               >
                                 <Video className="w-4 h-4 inline mr-1" />
                                 Join Call
@@ -487,7 +487,7 @@ export default function SessionsPage() {
                                 href={session.meet_link}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-3 py-1.5 border border-slate-300 text-slate-600 hover:border-slate-400 rounded-lg text-xs font-medium flex items-center gap-1"
+                                className="px-3 py-1.5 border border-[var(--line-strong)] text-muted-foreground hover:border-primary/40 rounded-lg text-xs font-medium flex items-center gap-1"
                               >
                                 <ExternalLink className="w-3 h-3" />
                                 Meet Link
@@ -502,15 +502,15 @@ export default function SessionsPage() {
 
                 {/* Pagination */}
                 {upcomingTotalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
-                    <p className="text-sm text-slate-600">
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                       Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredUpcoming.length)} of {filteredUpcoming.length} sessions
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-card border border-[var(--line-strong)] rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-4 h-4" />
                         Previous
@@ -522,8 +522,8 @@ export default function SessionsPage() {
                             onClick={() => setCurrentPage(page)}
                             className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
                               currentPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-700 hover:bg-slate-100'
+                                ? 'bg-[#0F1919] text-[#FFFBF3]'
+                                : 'text-muted-foreground hover:bg-muted'
                             }`}
                           >
                             {page}
@@ -533,7 +533,7 @@ export default function SessionsPage() {
                       <button
                         onClick={() => setCurrentPage(p => Math.min(upcomingTotalPages, p + 1))}
                         disabled={currentPage === upcomingTotalPages}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-card border border-[var(--line-strong)] rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next
                         <ChevronRight className="w-4 h-4" />
@@ -555,8 +555,8 @@ export default function SessionsPage() {
           <CardContent>
             {filteredPending.length === 0 ? (
               <div className="text-center py-12">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">
+                <CheckCircle2 className="w-12 h-12 text-success mx-auto mb-3" />
+                <p className="text-sm text-[var(--fg-faint)]">
                   {searchQuery ? 'No sessions match your search.' : '✅ All caught up! No sessions need review.'}
                 </p>
               </div>
@@ -566,27 +566,27 @@ export default function SessionsPage() {
                   {paginatedPending.map(session => {
                     const studentName = session.profiles?.full_name || 'Unknown Student'
                     return (
-                      <div key={session.id} className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div key={session.id} className="p-4 bg-warning-bg border border-warning/30 rounded-lg">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => setSelectedStudent(session)}
-                              className="w-10 h-10 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm hover:bg-orange-200 transition-colors cursor-pointer"
+                              className="w-10 h-10 rounded-full bg-warning-bg text-warning flex items-center justify-center font-bold text-sm hover:opacity-80 transition-colors cursor-pointer"
                             >
                               {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </button>
                             <div>
                               <button
                                 onClick={() => setSelectedStudent(session)}
-                                className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                                className="text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
                               >
                                 {studentName}
                               </button>
-                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(session.start_time)}
                               </p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                               </p>
@@ -596,6 +596,7 @@ export default function SessionsPage() {
                             onClick={() => markCompleted(session.id)}
                             disabled={markingComplete === session.id}
                             size="sm"
+                            className="bg-[#0F1919] text-[#FFFBF3] hover:bg-[#1C2C2C] shadow-none"
                           >
                             {markingComplete === session.id ? (
                               <>
@@ -617,15 +618,15 @@ export default function SessionsPage() {
 
                 {/* Pagination */}
                 {pendingTotalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
-                    <p className="text-sm text-slate-600">
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                       Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredPending.length)} of {filteredPending.length} sessions
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-card border border-[var(--line-strong)] rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-4 h-4" />
                         Previous
@@ -637,8 +638,8 @@ export default function SessionsPage() {
                             onClick={() => setCurrentPage(page)}
                             className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
                               currentPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-700 hover:bg-slate-100'
+                                ? 'bg-[#0F1919] text-[#FFFBF3]'
+                                : 'text-muted-foreground hover:bg-muted'
                             }`}
                           >
                             {page}
@@ -648,7 +649,7 @@ export default function SessionsPage() {
                       <button
                         onClick={() => setCurrentPage(p => Math.min(pendingTotalPages, p + 1))}
                         disabled={currentPage === pendingTotalPages}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-card border border-[var(--line-strong)] rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next
                         <ChevronRight className="w-4 h-4" />
@@ -670,8 +671,8 @@ export default function SessionsPage() {
           <CardContent>
             {filteredHistory.length === 0 ? (
               <div className="text-center py-12">
-                <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">
+                <BookOpen className="w-12 h-12 text-[var(--fg-faint)] mx-auto mb-3" />
+                <p className="text-sm text-[var(--fg-faint)]">
                   {searchQuery ? 'No sessions match your search.' : 'No session history yet.'}
                 </p>
               </div>
@@ -686,42 +687,35 @@ export default function SessionsPage() {
                     const is24hExpired = Date.now() > sessionStart.getTime() + 24 * 60 * 60 * 1000
                     const isLocked = note?.is_locked || is24hExpired
                     return (
-                      <div key={session.id} className="p-4 bg-white border border-slate-200 rounded-lg">
+                      <div key={session.id} className="p-4 bg-card border border-border rounded-lg">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => setSelectedStudent(session)}
-                              className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm hover:bg-slate-200 transition-colors cursor-pointer"
+                              className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm hover:bg-accent transition-colors cursor-pointer"
                             >
                               {studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                             </button>
                             <div>
                               <button
                                 onClick={() => setSelectedStudent(session)}
-                                className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                                className="text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
                               >
                                 {studentName}
                               </button>
-                              <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(session.start_time)}
                               </p>
-                              <p className="text-xs text-slate-600 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {formatTime(session.start_time)} – {formatTime(session.end_time)} ({session.duration_minutes} min)
                               </p>
                             </div>
                           </div>
-                          <Badge variant={isCompleted ? 'default' : 'destructive'} className={isCompleted ? 'bg-emerald-100 text-emerald-700' : ''}>
-                            {isCompleted ? (
-                              <>
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Completed
-                              </>
-                            ) : (
-                              'Cancelled'
-                            )}
-                          </Badge>
+                          <StatusBadge variant={isCompleted ? 'completed' : 'cancelled'} size="sm">
+                            {isCompleted ? 'Completed' : 'Cancelled'}
+                          </StatusBadge>
                         </div>
                         {/* Session Note Panel — only for completed sessions */}
                         {isCompleted && (
@@ -742,15 +736,15 @@ export default function SessionsPage() {
 
                 {/* Pagination */}
                 {historyTotalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
-                    <p className="text-sm text-slate-600">
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                       Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredHistory.length)} of {filteredHistory.length} sessions
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-card border border-[var(--line-strong)] rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-4 h-4" />
                         Previous
@@ -762,8 +756,8 @@ export default function SessionsPage() {
                             onClick={() => setCurrentPage(page)}
                             className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
                               currentPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-700 hover:bg-slate-100'
+                                ? 'bg-[#0F1919] text-[#FFFBF3]'
+                                : 'text-muted-foreground hover:bg-muted'
                             }`}
                           >
                             {page}
@@ -773,7 +767,7 @@ export default function SessionsPage() {
                       <button
                         onClick={() => setCurrentPage(p => Math.min(historyTotalPages, p + 1))}
                         disabled={currentPage === historyTotalPages}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-card border border-[var(--line-strong)] rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next
                         <ChevronRight className="w-4 h-4" />

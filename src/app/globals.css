@@ -5,77 +5,115 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-newsreader);
+  --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
 
-  /* Refined Blue & White Color Palette - Modern & Professional */
-  --color-primary: var(--color-blue-600);
-  --color-primary-foreground: var(--color-white);
-  --color-secondary: var(--color-slate-50);
-  --color-secondary-foreground: var(--color-slate-700);
-  --color-accent: var(--color-blue-50);
-  --color-accent-foreground: var(--color-blue-900);
-  --color-destructive: var(--color-red-500);
-  --color-destructive-foreground: var(--color-white);
-  --color-muted: var(--color-slate-50);
-  --color-muted-foreground: var(--color-slate-500);
-  --color-card: var(--color-white);
-  --color-card-foreground: var(--color-slate-900);
-  --color-popover: var(--color-white);
-  --color-popover-foreground: var(--color-slate-900);
-  --color-border: var(--color-slate-200);
-  --color-input: var(--color-slate-200);
-  --color-ring: var(--color-blue-500);
+  /* Mesa Design System - warm ivory/crimson palette (Mesa School of Business) */
+  --color-primary: var(--color-crimson-brick);
+  --color-primary-foreground: var(--color-ivory-whisper);
+  --color-secondary: var(--color-cream-butter);
+  --color-secondary-foreground: var(--color-deep-teal-black);
+  --color-accent: var(--color-peach-tint);
+  --color-accent-foreground: var(--color-deep-teal-black);
+  --color-destructive: var(--color-dark-maroon);
+  --color-destructive-foreground: var(--color-ivory-whisper);
+  --color-muted: var(--color-cream-butter);
+  --color-muted-foreground: var(--color-fg-muted);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-deep-teal-black);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-deep-teal-black);
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-crimson-brick);
 }
 
 :root {
-  /* Clean, contemporary color system - Inspired by Linear & Figma */
-  --background: #ffffff;
-  --foreground: #0f172a;
+  /* Mesa primary palette */
+  --ivory-whisper: #FFFBF3;
+  --cream-butter: #FBF4D7;
+  --crimson-brick: #BA3B41;
+  --deep-teal-black: #0F1919;
 
-  --card: #ffffff;
-  --card-foreground: #0f172a;
+  /* Mesa secondary palette */
+  --lemon-yellow: #E5E55A;
+  --peach-beige: #DFA396;
+  --dark-maroon: #702327;
 
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  /* Derived surfaces/ink used by @theme above */
+  --surface: #FFFFFF;
+  --peach-tint: #F5E6DE;
+  --fg-muted: #4A5454;
+  --fg-faint: #7C8585;
+  --line: #E8E1D2;
+  --line-strong: #D7CFBC;
+  --line-on-dark: #2A3636;
 
-  /* Professional blue primary - trustworthy and modern */
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
+  /* Semantic surfaces (shadcn-style tokens, now Mesa-mapped) */
+  --background: var(--ivory-whisper);
+  --foreground: var(--deep-teal-black);
 
-  --secondary: #f8fafc;
-  --secondary-foreground: #334155;
+  --card: var(--surface);
+  --card-foreground: var(--deep-teal-black);
 
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --popover: var(--surface);
+  --popover-foreground: var(--deep-teal-black);
 
-  --accent: #eff6ff;
-  --accent-foreground: #1e3a8a;
+  /* Crimson-brick primary - the Mesa brand accent */
+  --primary: var(--crimson-brick);
+  --primary-hover: #A8343A;
+  --primary-foreground: var(--ivory-whisper);
 
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
+  --secondary: var(--cream-butter);
+  --secondary-foreground: var(--deep-teal-black);
 
-  --border: #e2e8f0;
-  --input: #f1f5f9;
-  --ring: #3b82f6;
+  --muted: var(--cream-butter);
+  --muted-foreground: var(--fg-muted);
+
+  --accent: var(--peach-tint);
+  --accent-foreground: var(--deep-teal-black);
+
+  /* Distinct from --primary so destructive actions read differently from CTAs */
+  --destructive: var(--dark-maroon);
+  --destructive-foreground: var(--ivory-whisper);
+
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--crimson-brick);
 
   --radius: 0.75rem;
 
-  /* Chart colors - vibrant and accessible */
-  --chart-1: #3b82f6;
-  --chart-2: #f59e0b;
-  --chart-3: #10b981;
-  --chart-4: #ef4444;
-  --chart-5: #8b5cf6;
+  /* Extended semantic states - not in the Mesa brand book, kept warm-compatible */
+  --success: #4F7A5C;
+  --success-bg: #EAF1EA;
+  --warning: #8A6D1F;
+  --warning-bg: #FBF7D9;
+  --info: #5B6B7A;
+  --info-bg: var(--peach-tint);
+
+  /* Chart colors - Mesa brand palette */
+  --chart-1: var(--crimson-brick);
+  --chart-2: var(--deep-teal-black);
+  --chart-3: var(--peach-beige);
+  --chart-4: var(--lemon-yellow);
+  --chart-5: var(--dark-maroon);
+
+  /* Warm-tinted shadows and motion, per Mesa spec */
+  --shadow-sm: 0 1px 2px rgba(15,25,25,.06), 0 1px 3px rgba(15,25,25,.05);
+  --shadow-md: 0 4px 12px rgba(15,25,25,.08), 0 2px 4px rgba(15,25,25,.05);
+  --shadow-lg: 0 16px 40px rgba(15,25,25,.12), 0 4px 10px rgba(15,25,25,.06);
+  --shadow-accent: 0 10px 30px rgba(186,59,65,.28);
+  --ease: cubic-bezier(.22,.61,.36,1);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root { /* slate-950 */ /* slate-50 */
+  :root {
   }
 }
 
 body {
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: var(--font-manrope), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   @apply antialiased;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -144,6 +182,13 @@ body {
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -172,7 +217,7 @@ body {
 
   .hover-lift:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.05);
+    box-shadow: var(--shadow-md);
   }
 
   /* Hover scale effect - micro-interaction */
@@ -184,45 +229,45 @@ body {
     transform: scale(1.01);
   }
 
-  /* Gradient backgrounds - clean blue primary */
+  /* Gradient backgrounds - Mesa crimson primary */
   .gradient-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    box-shadow: 0 2px 8px 0 rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, #BA3B41 0%, #A8343A 100%);
+    box-shadow: 0 2px 8px 0 rgba(186, 59, 65, 0.2);
   }
 
   .gradient-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 2px 8px 0 rgba(16, 185, 129, 0.2);
+    background: linear-gradient(135deg, #4F7A5C 0%, #3E6249 100%);
+    box-shadow: 0 2px 8px 0 rgba(79, 122, 92, 0.2);
   }
 
   .gradient-warning {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    box-shadow: 0 2px 8px 0 rgba(245, 158, 11, 0.2);
+    background: linear-gradient(135deg, #E5E55A 0%, #C9C948 100%);
+    box-shadow: 0 2px 8px 0 rgba(229, 229, 90, 0.25);
   }
 
   .gradient-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    box-shadow: 0 2px 8px 0 rgba(239, 68, 68, 0.2);
+    background: linear-gradient(135deg, #BA3B41 0%, #702327 100%);
+    box-shadow: 0 2px 8px 0 rgba(112, 35, 39, 0.25);
   }
 
-  /* Glassmorphism effect - refined */
+  /* Glassmorphism effect - warm ivory tint */
   .glass {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 251, 243, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(226, 232, 240, 0.8);
+    border: 1px solid rgba(232, 225, 210, 0.8);
   }
 
   .glass-dark {
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 25, 25, 0.85);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 251, 243, 0.08);
   }
 
-  /* Text gradient - professional blue */
+  /* Text gradient - Mesa crimson */
   .text-gradient {
-    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    background: linear-gradient(135deg, #BA3B41 0%, #702327 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -255,17 +300,17 @@ body {
 
   .animate-shimmer {
     animation: shimmer 2s infinite linear;
-    background: linear-gradient(to right, #f1f5f9 4%, #e2e8f0 25%, #f1f5f9 36%);
+    background: linear-gradient(to right, #FBF4D7 4%, #E8E1D2 25%, #FBF4D7 36%);
     background-size: 1000px 100%;
   }
 
   /* Pulse glow effect */
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+      box-shadow: 0 0 5px rgba(186, 59, 65, 0.5);
     }
     50% {
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+      box-shadow: 0 0 20px rgba(186, 59, 65, 0.8);
     }
   }
 
@@ -275,7 +320,7 @@ body {
 
   /* Table improvements */
   .table-header {
-    @apply text-xs font-semibold uppercase tracking-wide text-slate-600;
+    @apply text-xs font-semibold uppercase tracking-wide text-[color:var(--fg-muted)];
   }
 
   /* Compact badge */
@@ -283,68 +328,68 @@ body {
     @apply px-2.5 py-1 text-xs font-semibold rounded-lg;
   }
 
-  /* Card shadow utilities */
+  /* Card shadow utilities - warm-tinted per Mesa spec */
   .card-shadow {
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    box-shadow: var(--shadow-sm);
   }
 
   .card-shadow-hover:hover {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    box-shadow: var(--shadow-md);
   }
 
   .card-shadow-lg {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    box-shadow: var(--shadow-lg);
   }
 
-  /* Focus ring utilities - Linear-inspired */
+  /* Focus ring utilities */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)];
   }
 
-  /* Linear-style button */
+  /* Mesa pill button */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-full shadow-[0_10px_30px_rgba(186,59,65,0.28)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[var(--foreground)] bg-white hover:bg-[var(--secondary)] border border-[var(--line-strong)] rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--secondary)] rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
-  /* Modern card with subtle shadow */
+  /* Modern card with warm hairline + soft shadow */
   .card-modern {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow;
+    @apply bg-white rounded-xl border border-[var(--border)] shadow-[0_1px_2px_rgba(15,25,25,.06),0_1px_3px_rgba(15,25,25,.05)] hover:shadow-[0_4px_12px_rgba(15,25,25,.08),0_2px_4px_rgba(15,25,25,.05)] transition-shadow;
   }
 
-  /* Input field - clean and minimal */
+  /* Input field - clean and minimal, Mesa-toned */
   .input-modern {
-    @apply w-full px-3 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors;
+    @apply w-full px-3 py-2 text-sm text-[var(--foreground)] bg-white border border-[var(--line-strong)] rounded-lg placeholder:text-[var(--fg-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-colors;
   }
 
   /* Badge variants */
   .badge-success {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md;
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success)]/20 rounded-md;
   }
 
   .badge-warning {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-md;
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-[var(--warning-bg)] text-[var(--warning)] border border-[var(--warning)]/20 rounded-md;
   }
 
   .badge-danger {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-md;
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-[var(--peach-tint)] text-[var(--destructive)] border border-[var(--destructive)]/20 rounded-md;
   }
 
   .badge-neutral {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 rounded-md;
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium bg-[var(--secondary)] text-[color:var(--fg-muted)] border border-[var(--border)] rounded-md;
   }
 
-  /* Scrollbar styling - minimal like Linear */
+  /* Scrollbar styling - warm neutral */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(203 213 225) transparent;
+    scrollbar-color: #D7CFBC transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -357,13 +402,13 @@ body {
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(203 213 225);
+    background-color: #D7CFBC;
     border-radius: 4px;
     border: 2px solid transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(148 163 184);
+    background-color: #BFB49B;
   }
 }
 
@@ -373,8 +418,9 @@ body {
   }
 
   body {
-    @apply bg-white text-slate-900;
-    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply text-[var(--foreground)];
+    background: var(--background);
+    font-family: var(--font-manrope), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
   html {
@@ -382,10 +428,16 @@ body {
     scroll-behavior: smooth;
   }
 
-  /* Typography hierarchy - precise and refined like Linear */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-slate-900;
+  /* Typography hierarchy - Mesa serif/sans pairing: display serif for headings */
+  h1, h2, h3, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-semibold text-[var(--foreground)];
     letter-spacing: -0.02em;
+  }
+
+  h4 {
+    @apply font-bold text-[var(--foreground)];
+    letter-spacing: -0.01em;
   }
 
   h1 {
@@ -405,11 +457,10 @@ body {
 
   h4 {
     @apply text-lg md:text-xl;
-    font-weight: 600;
   }
 
   p {
-    @apply text-slate-600 leading-relaxed;
+    @apply text-[color:var(--fg-muted)] leading-relaxed;
   }
 
   /* Smooth transitions everywhere */

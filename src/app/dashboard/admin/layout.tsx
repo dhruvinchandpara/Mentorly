@@ -68,10 +68,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (loading || !profile || profile.role !== 'admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-slate-900">Verifying admin access...</h2>
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-foreground">Verifying admin access...</h2>
         </div>
       </div>
     );
@@ -86,32 +86,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .slice(0, 2) || 'AD';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <aside
         className={`${
           collapsed ? 'w-20' : 'w-64'
-        } transition-all duration-300 ease-in-out bg-white border-r border-slate-200 flex flex-col fixed h-full z-20`}
+        } transition-all duration-300 ease-in-out bg-card border-r border-border flex flex-col fixed h-full z-20`}
       >
         {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-border">
           {!collapsed && (
             <Link href="/dashboard/admin" className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0F1919] to-[#702327] flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="text-base font-semibold text-slate-900 tracking-tight">Mentorly Admin</span>
+              <span className="text-base font-semibold text-foreground tracking-tight">Mentorly Admin</span>
             </Link>
           )}
           {collapsed && (
-            <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center mx-auto">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0F1919] to-[#702327] flex items-center justify-center mx-auto">
               <Shield className="w-4 h-4 text-white" />
             </div>
           )}
           {!collapsed && (
             <button
               onClick={() => setCollapsed(true)}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-secondary text-[var(--fg-faint)] transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -123,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {collapsed && (
             <button
               onClick={() => setCollapsed(false)}
-              className="w-full flex items-center justify-center p-3 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors mb-2"
+              className="w-full flex items-center justify-center p-3 rounded-lg hover:bg-secondary text-muted-foreground transition-colors mb-2"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -138,11 +138,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-[#F5E6DE] text-[#702327] font-medium'
+                    : 'text-muted-foreground hover:bg-secondary'
                 }`}
               >
-                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-[#702327]' : 'text-[var(--fg-faint)]'}`} />
                 {!collapsed && <span className="text-sm">{item.label}</span>}
               </Link>
             );
@@ -150,14 +150,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Bottom section */}
-        <div className="p-3 border-t border-slate-200">
+        <div className="p-3 border-t border-border">
           {!collapsed ? (
             <div className="px-3 py-2">
-              <p className="text-xs text-slate-500">Admin Panel v1.0</p>
+              <p className="text-xs text-[var(--fg-faint)]">Admin Panel v1.0</p>
             </div>
           ) : (
             <div className="flex justify-center">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <div className="w-2 h-2 rounded-full bg-success" />
             </div>
           )}
         </div>
@@ -166,19 +166,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main content */}
       <main className={`flex-1 transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-64'}`}>
         {/* Top bar */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
+        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-10">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm">
             <Link
               href="/dashboard/admin"
-              className="text-slate-600 hover:text-slate-900 transition-colors font-medium"
+              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
               Admin
             </Link>
             {pathname !== '/dashboard/admin' && (
               <>
-                <span className="text-slate-300">/</span>
-                <span className="text-slate-900 font-medium">
+                <span className="text-[var(--fg-faint)]">/</span>
+                <span className="text-foreground font-medium">
                   {pathname
                     .split('/')
                     .pop()
@@ -191,13 +191,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* Profile dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-3 hover:bg-slate-50 rounded-lg px-3 py-2 transition-colors">
+            <DropdownMenuTrigger className="flex items-center gap-3 hover:bg-secondary rounded-lg px-3 py-2 transition-colors">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-slate-900">{profile?.full_name || 'Admin'}</p>
-                <p className="text-xs text-slate-500">{profile?.email}</p>
+                <p className="text-sm font-medium text-foreground">{profile?.full_name || 'Admin'}</p>
+                <p className="text-xs text-muted-foreground">{profile?.email}</p>
               </div>
-              <Avatar className="h-9 w-9 border-2 border-blue-100">
-                <AvatarFallback className="gradient-primary text-white text-xs font-semibold">
+              <Avatar className="h-9 w-9 border-2 border-[#F5E6DE]">
+                <AvatarFallback className="bg-gradient-to-br from-[#0F1919] to-[#702327] text-white text-xs font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -212,7 +212,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 Manage Admins
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut} className="text-red-600 focus:text-red-600">
+              <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>

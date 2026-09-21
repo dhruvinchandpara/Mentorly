@@ -212,32 +212,32 @@ export default function AuthorizedStudentsPage() {
  return (
  <div className="space-y-6">
  <div className="mb-6">
- <h1 className="text-2xl font-bold text-blue-950 tracking-tight flex items-center gap-3">
+ <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-3">
  Authorized Students
  </h1>
- <p className="text-slate-600 text-sm mt-1">
+ <p className="text-muted-foreground text-sm mt-1">
  Only students whose emails are in this list will be allowed to use the application.
  </p>
  </div>
 
  {/* Add Student Form */}
- <div className="bg-white rounded-2xl border border-blue-200 p-6 shadow-sm mb-8">
+ <div className="bg-white rounded-2xl border border-border p-6 shadow-sm mb-8">
  <form onSubmit={handleAddStudent} className="flex flex-col sm:flex-row gap-4">
  <div className="relative flex-1">
- <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+ <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--fg-faint)]" />
  <input
  type="email"
  required
  placeholder="student-email@university.edu"
  value={newEmail}
  onChange={(e) => setNewEmail(e.target.value)}
- className="w-full pl-10 pr-4 py-3 rounded-xl border border-blue-200 bg-white text-blue-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+ className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-foreground focus:ring-2 focus:ring-ring outline-none transition-all"
  />
  </div>
  <button
  type="submit"
  disabled={actionLoading}
- className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 disabled:opacity-70"
+ className="bg-[#0F1919] hover:bg-[#1C2C2C] text-[#FFFBF3] font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-70"
  >
  {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
  Add Student
@@ -245,7 +245,7 @@ export default function AuthorizedStudentsPage() {
  <button
  type="button"
  onClick={() => setShowBulkImport(true)}
- className="bg-white border border-blue-200 hover:border-blue-400 text-blue-800 font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+ className="bg-white border border-border hover:border-primary text-foreground font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2"
  >
  <Upload className="w-5 h-5" />
  Bulk Import
@@ -254,8 +254,8 @@ export default function AuthorizedStudentsPage() {
 
  {message && (
  <div className={`mt-4 p-4 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300 ${message.type === 'success'
- ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 '
- : 'bg-red-50 text-red-700 border border-red-200 '
+ ? 'bg-success-bg text-success border border-success '
+ : 'bg-[#F5E6DE] text-destructive border border-destructive '
  }`}>
  {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
  {message.text}
@@ -264,35 +264,35 @@ export default function AuthorizedStudentsPage() {
  </div>
 
  {/* Students List */}
- <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
- <div className="p-6 border-b border-slate-100 flex items-center justify-between gap-4">
+ <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+ <div className="p-6 border-b border-border flex items-center justify-between gap-4">
  <div className="relative max-w-sm flex-1">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-faint)]" />
  <input
  type="text"
  placeholder="Search by name or email..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-blue-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+ className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-border bg-secondary outline-none focus:ring-2 focus:ring-ring transition-all"
  />
  </div>
- <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+ <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
  {filteredStudents.length} Students
  </span>
  </div>
 
  {loading ? (
  <div className="p-20 text-center">
- <Loader2 className="w-10 h-10 animate-spin text-slate-600 mx-auto" />
- <p className="mt-4 text-slate-600">Loading student list...</p>
+ <Loader2 className="w-10 h-10 animate-spin text-muted-foreground mx-auto" />
+ <p className="mt-4 text-muted-foreground">Loading student list...</p>
  </div>
  ) : filteredStudents.length === 0 ? (
  <div className="p-20 text-center">
- <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
- <Mail className="w-8 h-8 text-slate-400" />
+ <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
+ <Mail className="w-8 h-8 text-[var(--fg-faint)]" />
  </div>
- <h3 className="text-lg font-semibold text-blue-950">No authorized students</h3>
- <p className="text-sm text-slate-600 max-w-xs mx-auto mt-1">
+ <h3 className="text-lg font-semibold text-foreground font-sans">No authorized students</h3>
+ <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
  {searchQuery ? 'No students match your search.' : 'Add a student email above to grant them access.'}
  </p>
  </div>
@@ -300,52 +300,52 @@ export default function AuthorizedStudentsPage() {
  <div className="overflow-x-auto">
  <table className="w-full">
  <thead>
- <tr className="border-b border-blue-200">
- <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ <tr className="border-b border-border">
+ <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
  Student
  </th>
- <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
  Email
  </th>
- <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
  Sessions Completed
  </th>
- <th className="text-left px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
  Hours Completed
  </th>
- <th className="text-right px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+ <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
  Actions
  </th>
  </tr>
  </thead>
- <tbody className="divide-y divide-slate-100">
+ <tbody className="divide-y divide-border">
  {filteredStudents.map((student) => (
- <tr key={student.email} className="hover:bg-slate-50 transition-colors">
+ <tr key={student.email} className="hover:bg-secondary transition-colors">
  <td className="px-6 py-4">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+ <div className="w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
  {(student.full_name || student.email).charAt(0).toUpperCase()}
  </div>
  <div>
- <p className="text-sm font-medium text-blue-950">
+ <p className="text-sm font-medium text-foreground">
  {student.full_name || 'Not registered'}
  </p>
- <p className="text-xs text-slate-500">
+ <p className="text-xs text-[var(--fg-faint)]">
  Added {new Date(student.created_at).toLocaleDateString()}
  </p>
  </div>
  </div>
  </td>
  <td className="px-6 py-4">
- <p className="text-sm text-blue-950">{student.email}</p>
+ <p className="text-sm text-foreground">{student.email}</p>
  </td>
  <td className="px-6 py-4">
- <Badge variant="secondary" className="text-slate-700">
+ <Badge variant="secondary" className="text-muted-foreground">
  {student.totalSessions || 0} sessions
  </Badge>
  </td>
  <td className="px-6 py-4">
- <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200">
+ <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-muted-foreground text-xs font-semibold border border-border">
  <Clock className="w-3.5 h-3.5" />
  {student.totalHours?.toFixed(1) || '0.0'} hrs
  </span>
@@ -353,7 +353,7 @@ export default function AuthorizedStudentsPage() {
  <td className="px-6 py-4 text-right">
  <DropdownMenu>
  <DropdownMenuTrigger
- className="p-2 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors"
+ className="p-2 rounded-lg hover:bg-accent text-muted-foreground transition-colors"
  disabled={actionLoading}
  >
  <MoreVertical className="w-4 h-4" />
@@ -362,7 +362,7 @@ export default function AuthorizedStudentsPage() {
  <DropdownMenuItem
  onClick={() => handleRemoveStudent(student.email)}
  disabled={actionLoading}
- className="text-red-600 focus:text-red-600"
+ className="text-destructive focus:text-destructive"
  >
  {actionLoading ? (
  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -384,16 +384,16 @@ export default function AuthorizedStudentsPage() {
 
  {/* Bulk Import Modal */}
  {showBulkImport && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
- <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-blue-200 max-h-[90vh] overflow-y-auto">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F1919]/60 backdrop-blur-sm">
+ <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-border max-h-[90vh] overflow-y-auto">
  {/* Header */}
- <div className="sticky top-0 bg-white px-6 py-5 border-b border-blue-200 flex items-center justify-between z-10 rounded-t-2xl">
+ <div className="sticky top-0 bg-white px-6 py-5 border-b border-border flex items-center justify-between z-10 rounded-t-2xl">
  <div>
- <h2 className="text-xl font-bold text-blue-950 flex items-center gap-3">
- <Upload className="w-6 h-6 text-blue-600" />
+ <h2 className="text-xl font-bold text-foreground font-sans flex items-center gap-3">
+ <Upload className="w-6 h-6 text-primary" />
  Bulk Import Students
  </h2>
- <p className="text-sm text-blue-600 mt-1">
+ <p className="text-sm text-primary mt-1">
  Import multiple student email addresses at once
  </p>
  </div>
@@ -402,7 +402,7 @@ export default function AuthorizedStudentsPage() {
  setShowBulkImport(false)
  setBulkEmails('')
  }}
- className="p-2 rounded-lg hover:bg-blue-50 :bg-slate-800 text-blue-600 transition"
+ className="p-2 rounded-lg hover:bg-accent text-primary transition"
  >
  <X className="w-5 h-5" />
  </button>
@@ -411,18 +411,18 @@ export default function AuthorizedStudentsPage() {
  {/* Body */}
  <div className="p-6 space-y-6">
  {/* Instructions */}
- <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
- <h3 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+ <div className="bg-accent border border-border rounded-xl p-4">
+ <h3 className="text-sm font-semibold text-foreground font-sans mb-2 flex items-center gap-2">
  <FileText className="w-4 h-4" />
  Supported Formats
  </h3>
- <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+ <ul className="text-xs text-primary space-y-1 list-disc list-inside">
  <li>One email per line</li>
  <li>Comma-separated values (CSV)</li>
  <li>Semicolon-separated values</li>
  <li>Upload a .txt or .csv file</li>
  </ul>
- <div className="mt-3 text-xs text-blue-600 font-mono bg-white p-2 rounded border border-blue-200 ">
+ <div className="mt-3 text-xs text-primary font-mono bg-white p-2 rounded border border-border ">
  student1@university.edu<br />
  student2@university.edu<br />
  student3@university.edu
@@ -431,28 +431,26 @@ export default function AuthorizedStudentsPage() {
 
  {/* File Upload */}
  <div>
- <label className="block text-sm font-medium text-blue-800 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Upload File (Optional)
  </label>
  <input
  type="file"
  accept=".txt,.csv"
  onChange={handleFileUpload}
- className="block w-full text-sm text-blue-600 
+ className="block w-full text-sm text-primary 
  file:mr-4 file:py-2 file:px-4
  file:rounded-lg file:border-0
  file:text-sm file:font-semibold
- file:bg-blue-50 file:text-blue-700
- hover:file:bg-blue-100
- :bg-blue-950/30 :text-blue-400
- :file:bg-blue-950/50
+ file:bg-accent file:text-primary
+ hover:file:bg-accent
  cursor-pointer"
  />
  </div>
 
  {/* Text Area */}
  <div>
- <label className="block text-sm font-medium text-blue-800 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Email Addresses
  </label>
  <textarea
@@ -460,29 +458,29 @@ export default function AuthorizedStudentsPage() {
  onChange={(e) => setBulkEmails(e.target.value)}
  rows={10}
  placeholder="student1@university.edu&#10;student2@university.edu&#10;student3@university.edu"
- className="w-full px-4 py-3 rounded-xl border border-blue-200 bg-white text-blue-950 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm font-mono resize-none"
+ className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder-[var(--fg-faint)] focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition text-sm font-mono resize-none"
  />
- <p className="mt-2 text-xs text-blue-600 ">
+ <p className="mt-2 text-xs text-primary ">
  {bulkEmails.split(/[\n,;]+/).filter(e => e.trim()).length} email(s) detected
  </p>
  </div>
  </div>
 
  {/* Footer */}
- <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-blue-200 flex items-center justify-end gap-3 rounded-b-2xl">
+ <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-border flex items-center justify-end gap-3 rounded-b-2xl">
  <button
  onClick={() => {
  setShowBulkImport(false)
  setBulkEmails('')
  }}
- className="px-5 py-2.5 rounded-xl text-sm font-medium text-blue-800 hover:bg-blue-50 :bg-slate-800 transition"
+ className="px-5 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent transition"
  >
  Cancel
  </button>
  <button
  onClick={handleBulkImport}
  disabled={bulkImportLoading || !bulkEmails.trim()}
- className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+ className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#0F1919] hover:bg-[#1C2C2C] text-[#FFFBF3] shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
  >
  {bulkImportLoading ? (
  <>
