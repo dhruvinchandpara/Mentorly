@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import {
   LayoutDashboard,
+  ClipboardCheck,
   CalendarDays,
   Users,
   GraduationCap,
@@ -34,6 +35,11 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
+    label: 'Approvals',
+    href: '/dashboard/admin/approvals',
+    icon: ClipboardCheck,
+  },
+  {
     label: 'Sessions',
     href: '/dashboard/admin/sessions',
     icon: CalendarDays,
@@ -51,10 +57,37 @@ const navItems = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, supabase } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [approvalsCount, setApprovalsCount] = useState(0);
+
+  useEffect(() => {
+    if (!profile || profile.role !== 'admin') return;
+    let cancelled = false;
+
+    const fetchApprovalsCount = async () => {
+      const [{ count: pendingCount }, { count: reviewCount }] = await Promise.all([
+        supabase
+          .from('sessions')
+          .select('*', { count: 'exact', head: true })
+          .in('status', ['pending', 'requested']),
+        supabase
+          .from('sessions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'awaiting_post_review'),
+      ]);
+      if (!cancelled) {
+        setApprovalsCount((pendingCount || 0) + (reviewCount || 0));
+      }
+    };
+
+    fetchApprovalsCount();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, supabase]);
 
   useEffect(() => {
     if (!loading) {
@@ -143,7 +176,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 }`}
               >
                 <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-[#702327]' : 'text-[var(--fg-faint)]'}`} />
-                {!collapsed && <span className="text-sm">{item.label}</span>}
+                {!collapsed && (
+                  <span className="text-sm flex items-center flex-1 gap-2">
+                    {item.label}
+                    {item.href === '/dashboard/admin/approvals' && approvalsCount > 0 && (
+                      <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FBF7D9] text-[#0F1919] text-[10px] font-semibold border border-[#0F1919]/10">
+                        {approvalsCount}
+                      </span>
+                    )}
+                  </span>
+                )}
               </Link>
             );
           })}
