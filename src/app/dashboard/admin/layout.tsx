@@ -9,7 +9,6 @@ import {
   ClipboardCheck,
   CalendarDays,
   Users,
-  GraduationCap,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -18,6 +17,7 @@ import {
   UserCog,
   Settings,
   Sparkles,
+  IndianRupee,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -45,14 +45,14 @@ const navItems = [
     icon: CalendarDays,
   },
   {
-    label: 'Mentors',
-    href: '/dashboard/admin/mentors',
-    icon: Users,
+    label: 'Payments',
+    href: '/dashboard/admin/payments',
+    icon: IndianRupee,
   },
   {
-    label: 'Students',
-    href: '/dashboard/admin/students',
-    icon: GraduationCap,
+    label: 'Users',
+    href: '/dashboard/admin/users',
+    icon: Users,
   },
 ];
 

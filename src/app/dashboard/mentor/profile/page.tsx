@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
 import {
-  User, Tag, Save, Loader2, X, IndianRupee, Eye
+  User, Tag, Save, Loader2, IndianRupee, Eye
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,24 +24,29 @@ export default function ProfilePage() {
 
   const [bio, setBio] = useState('')
   const [background, setBackground] = useState('')
-  const [expertiseInput, setExpertiseInput] = useState('')
   const [expertiseList, setExpertiseList] = useState<string[]>([])
 
   const fetchProfile = useCallback(async () => {
     if (!profile?.id) return
     setLoading(true)
     try {
-      const { data: mentorData } = await supabase
-        .from('mentors')
-        .select('*')
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, bio, background, expertise_tags, hourly_rate')
         .eq('id', profile.id)
         .single()
 
-      if (mentorData) {
-        setMentorProfile(mentorData)
-        setBio(mentorData.bio || '')
-        setBackground(mentorData.background || '')
-        setExpertiseList(mentorData.expertise || [])
+      if (profileData) {
+        setMentorProfile({
+          id: profileData.id,
+          bio: profileData.bio,
+          background: profileData.background,
+          expertise: profileData.expertise_tags,
+          hourly_rate: profileData.hourly_rate,
+        })
+        setBio(profileData.bio || '')
+        setBackground(profileData.background || '')
+        setExpertiseList(profileData.expertise_tags || [])
       }
     } catch (err: any) {
       console.error('Error fetching profile:', err)
@@ -54,26 +59,13 @@ export default function ProfilePage() {
     fetchProfile()
   }, [fetchProfile])
 
-  const handleAddExpertise = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && expertiseInput.trim()) {
-      e.preventDefault()
-      if (!expertiseList.includes(expertiseInput.trim())) {
-        setExpertiseList([...expertiseList, expertiseInput.trim()])
-      }
-      setExpertiseInput('')
-    }
-  }
-
-  const handleRemoveExpertise = (tag: string) =>
-    setExpertiseList(expertiseList.filter(t => t !== tag))
-
   const saveProfile = async () => {
     if (!profile?.id) return
     setSaving(true)
     try {
       const { error } = await supabase
-        .from('mentors')
-        .update({ bio, background, expertise: expertiseList })
+        .from('profiles')
+        .update({ bio, background })
         .eq('id', profile.id)
       if (error) throw error
       await fetchProfile()
@@ -153,28 +145,19 @@ export default function ProfilePage() {
               <Tag className="w-4 h-4" />
               Areas of Expertise
             </label>
-            <div className="space-y-3">
-              <input
-                type="text"
-                className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                placeholder="Type a skill and press Enter (e.g. Product Management)"
-                value={expertiseInput}
-                onChange={(e) => setExpertiseInput(e.target.value)}
-                onKeyDown={handleAddExpertise}
-              />
-              <div className="flex flex-wrap gap-2">
-                {expertiseList.map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent text-primary rounded-lg text-sm border border-accent">
+            <div className="flex flex-wrap gap-2">
+              {expertiseList.length > 0 ? (
+                expertiseList.map((tag) => (
+                  <span key={tag} className="inline-flex items-center px-3 py-1 bg-accent text-primary rounded-lg text-sm border border-accent">
                     {tag}
-                    <button onClick={() => handleRemoveExpertise(tag)} className="hover:bg-accent/60 rounded-full p-0.5 transition-colors">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
                   </span>
-                ))}
-              </div>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">No expertise tags yet.</span>
+              )}
             </div>
-            <p className="text-xs text-[var(--fg-faint)] mt-1">
-              Students can filter mentors by these tags.
+            <p className="text-xs text-[var(--fg-faint)] mt-2">
+              Only admins can change your expertise tags.
             </p>
           </div>
 

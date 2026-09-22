@@ -13,6 +13,16 @@ interface Mentor {
   }
 }
 
+type MentorProfileRow = {
+  id: string
+  bio: string | null
+  expertise_tags: string[] | null
+  hourly_rate: number | null
+  is_active: boolean
+  full_name: string | null
+  email: string | null
+}
+
 export function useMentors(activeOnly = true) {
   const { supabase } = useAuth()
 
@@ -20,18 +30,9 @@ export function useMentors(activeOnly = true) {
     queryKey: ['mentors', activeOnly],
     queryFn: async () => {
       let query = supabase
-        .from('mentors')
-        .select(`
-          id,
-          bio,
-          expertise,
-          hourly_rate,
-          is_active,
-          profiles!inner (
-            full_name,
-            email
-          )
-        `)
+        .from('profiles')
+        .select('id, bio, expertise_tags, hourly_rate, is_active, full_name, email')
+        .eq('role', 'mentor')
 
       if (activeOnly) {
         query = query.eq('is_active', true)
@@ -44,7 +45,14 @@ export function useMentors(activeOnly = true) {
         throw error
       }
 
-      return data || []
+      return ((data as MentorProfileRow[]) || []).map((p) => ({
+        id: p.id,
+        bio: p.bio ?? '',
+        expertise: p.expertise_tags ?? [],
+        hourly_rate: p.hourly_rate ?? 0,
+        is_active: p.is_active,
+        profiles: { full_name: p.full_name ?? '', email: p.email ?? '' },
+      }))
     },
     // Refetch every minute when window is focused (mentor list changes less frequently)
     refetchInterval: 60000,

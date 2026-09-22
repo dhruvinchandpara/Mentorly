@@ -62,17 +62,20 @@ export default function AdminHome() {
     try {
       // Fetch metrics
       const { count: totalMentors } = await supabase
-        .from('mentors')
+        .from('profiles')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'mentor')
 
       const { count: pendingApprovals } = await supabase
-        .from('mentors')
+        .from('profiles')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'mentor')
         .eq('is_active', false)
 
       const { count: activeMentors } = await supabase
-        .from('mentors')
+        .from('profiles')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'mentor')
         .eq('is_active', true)
 
       // Try sessions table first for count, fallback to bookings view
@@ -85,8 +88,10 @@ export default function AdminHome() {
       }
 
       const { count: authorizedStudents } = await supabase
-        .from('authorized_students')
+        .from('profiles')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'student')
+        .eq('is_authorized', true)
 
       setMetrics({
         totalMentors: totalMentors || 0,

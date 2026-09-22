@@ -118,23 +118,21 @@ export default function MentorBookingPage() {
     const fetchMentor = async () => {
       try {
         const { data, error } = await supabase
-          .from('mentors')
-          .select(`
-            id,
-            bio,
-            expertise,
-            hourly_rate,
-            is_active,
-            profiles!inner (
-              full_name,
-              email
-            )
-          `)
+          .from('profiles')
+          .select('id, bio, expertise_tags, hourly_rate, is_active, full_name, email')
           .eq('id', mentorId)
+          .eq('role', 'mentor')
           .single()
 
         if (error) throw error
-        setMentor(data as unknown as MentorProfile)
+        setMentor({
+          id: data.id,
+          bio: data.bio ?? '',
+          expertise: data.expertise_tags ?? [],
+          hourly_rate: data.hourly_rate ?? 0,
+          is_active: data.is_active,
+          profiles: { full_name: data.full_name ?? '', email: data.email ?? '' },
+        })
       } catch (err) {
         console.error('Error fetching mentor:', err)
       }

@@ -23,35 +23,13 @@ export async function switchRole(newRole: 'admin' | 'mentor' | 'student') {
   const userId = user.id
 
   try {
-    // 1. Ensure related profile records exist to prevent UI crashes
-    if (newRole === 'mentor') {
-      const { error: mentorError } = await adminClient
-        .from('mentors')
-        .upsert({ 
-          id: userId, 
-          bio: 'Test Mentor Bio', 
-          expertise: ['Testing'],
-          hourly_rate: 0,
-          is_active: true
-        }, { onConflict: 'id' })
-      if (mentorError) throw mentorError
-    }
-
-    if (newRole === 'student') {
-      const { error: studentError } = await adminClient
-        .from('students')
-        .upsert({ 
-          id: userId, 
-          bio: 'Test Student Bio' 
-        }, { onConflict: 'id' })
-      if (studentError) throw studentError
-    }
-
-    // 2. Update the role in profiles table with consolidated fields
+    // Update the role and role-specific defaults directly on profiles.
     const profileUpdates: any = { role: newRole }
     if (newRole === 'student') {
       profileUpdates.is_authorized = true
     } else if (newRole === 'mentor') {
+      profileUpdates.bio = 'Test Mentor Bio'
+      profileUpdates.expertise_tags = ['Testing']
       profileUpdates.is_active = true
       profileUpdates.hourly_rate = 0
     }
@@ -63,7 +41,7 @@ export async function switchRole(newRole: 'admin' | 'mentor' | 'student') {
 
     if (roleError) throw roleError
 
-    // 3. Clear cache to reflect new layout
+    // Clear cache to reflect new layout
     revalidatePath('/', 'layout')
     
     return { success: true }

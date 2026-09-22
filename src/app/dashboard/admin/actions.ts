@@ -4,117 +4,153 @@ import { createAdminClient, getAdminUserId } from '@/lib/supabase/admin'
 import { createGoogleMeetingWithOAuth } from '@/lib/google-calendar-oauth'
 import { isGoogleConnected } from '@/lib/google-oauth'
 import { validateRejectionReason, validateRevisionReason } from '@/lib/booking-validation'
+import type { UserRole } from './user-constants'
 
-export type CreateMentorInput = {
+export type { UserRole }
+
+export type InviteInput = {
+ role: UserRole
  fullName: string
  email: string
  bio: string
  background: string
- expertise: string[]
  hourlyRate: number | null
+ expertiseTags: string[]
+ isActive: boolean
+ permissions: string[]
 }
 
-export type UpdateMentorInput = {
- mentorId: string
+export type UpdateUserInput = {
+ userId: string
+ role: UserRole
+ fullName: string
+ email: string
+ isAuthorized: boolean
  bio: string
  background: string
- expertise: string[]
  hourlyRate: number | null
-}
-
-export type ToggleStatusInput = {
- mentorId: string
+ expertiseTags: string[]
  isActive: boolean
+ permissions: string[]
 }
 
-export async function createMentor(input: CreateMentorInput) {
+/**
+ * Invites a new user of any role — the only way anyone gets an account now.
+ * This just writes a row to `authorized_users` (role + whatever
+ * role-specific fields were entered); no auth.users account exists yet and
+ * no password is involved. The person signs in with Google themselves
+ * whenever they like, and the `handle_new_user()` trigger reads this row
+ * to create their `profiles` row with the right role and fields already
+ * filled in.
+ */
+export async function createInvite(input: InviteInput) {
  try {
  const supabase = createAdminClient()
+ const email = input.email.trim().toLowerCase()
 
- // 1. Create the auth user with a temporary password
- const tempPassword = `Mentor_${Math.random().toString(36).slice(2, 10)}!${Date.now()}`
-
- const { data: authData, error: authError } =
- await supabase.auth.admin.createUser({
- email: input.email,
- password: tempPassword,
- email_confirm: true, // Auto-confirm so they can login
- user_metadata: {
- full_name: input.fullName,
- role: 'mentor',
+ const { error } = await supabase.from('authorized_users').upsert(
+ {
+ email,
+ role: input.role,
+ full_name: input.fullName.trim() || null,
+ bio: input.bio,
+ background: input.background,
+ hourly_rate: input.hourlyRate,
+ expertise_tags: input.expertiseTags,
+ is_active: input.isActive,
+ permissions: input.permissions,
  },
- })
+ { onConflict: 'email' }
+ )
 
+ if (error) {
+ return { success: false, error: error.message }
+ }
+
+ return { success: true }
+ } catch (error) {
+ console.error('Create invite error:', error)
+ return {
+ success: false,
+ error:
+ error instanceof Error
+ ? error.message
+ : 'An unexpected error occurred',
+ }
+ }
+}
+
+/**
+ * Updates a real, already-signed-in user's profile. Doesn't touch
+ * `authorized_users` except to keep a student's allowlist membership (the
+ * thing that actually gated their original signup) in sync with the
+ * admin-facing "Authorized to sign in" flag.
+ */
+export async function updateUser(input: UpdateUserInput) {
+ try {
+ const supabase = createAdminClient()
+ const email = input.email.trim().toLowerCase()
+
+ const { data: existing, error: fetchError } = await supabase
+ .from('profiles')
+ .select('email')
+ .eq('id', input.userId)
+ .single()
+
+ if (fetchError || !existing) {
+ return { success: false, error: 'User not found.' }
+ }
+
+ if (existing.email !== email) {
+ const { error: authError } = await supabase.auth.admin.updateUserById(
+ input.userId,
+ { email }
+ )
  if (authError) {
  return {
  success: false,
- error: authError.message,
+ error: `Failed to update login email: ${authError.message}`,
+ }
  }
  }
 
- const userId = authData.user.id
-
- // 2. Update the profile to ensure role is 'mentor'
- // (trigger should have created it, but let's make sure)
- const { error: profileError } = await supabase
- .from('profiles')
- .update({
- role: 'mentor',
+ const profileUpdate: Record<string, unknown> = {
  full_name: input.fullName,
- })
- .eq('id', userId)
-
- if (profileError) {
- console.error('Profile update error:', profileError)
+ email,
  }
 
- // 3. Create the mentor record
- const { error: mentorError } = await supabase.from('mentors').insert({
- id: userId,
- bio: input.bio,
- background: input.background,
- expertise: input.expertise,
- hourly_rate: input.hourlyRate,
- is_active: true, // Admin-created mentors are active by default
- })
-
- if (mentorError) {
- return {
- success: false,
- error: mentorError.message,
+ if (input.role === 'student') {
+ // Keep the allowlist that actually gated signup in sync with the
+ // admin-facing is_authorized flag, using whichever email is current.
+ if (existing.email !== email) {
+ await supabase.from('authorized_users').delete().eq('email', existing.email)
+ }
+ profileUpdate.is_authorized = input.isAuthorized
+ if (input.isAuthorized) {
+ await supabase
+ .from('authorized_users')
+ .upsert({ email, role: 'student' }, { onConflict: 'email' })
+ } else {
+ await supabase.from('authorized_users').delete().eq('email', email)
  }
  }
 
- return {
- success: true,
- tempPassword,
- userId,
+ if (input.role === 'mentor') {
+ profileUpdate.bio = input.bio
+ profileUpdate.background = input.background
+ profileUpdate.hourly_rate = input.hourlyRate
+ profileUpdate.expertise_tags = input.expertiseTags
+ profileUpdate.is_active = input.isActive
  }
- } catch (error) {
- console.error('Create mentor error:', error)
- return {
- success: false,
- error:
- error instanceof Error
- ? error.message
- : 'An unexpected error occurred',
- }
- }
-}
 
-export async function updateMentor(input: UpdateMentorInput) {
- try {
- const supabase = createAdminClient()
+ if (input.role === 'admin') {
+ profileUpdate.permissions = input.permissions
+ }
 
  const { error } = await supabase
- .from('mentors')
- .update({
- bio: input.bio,
- background: input.background,
- expertise: input.expertise,
- hourly_rate: input.hourlyRate,
- })
- .eq('id', input.mentorId)
+ .from('profiles')
+ .update(profileUpdate)
+ .eq('id', input.userId)
 
  if (error) {
  return { success: false, error: error.message }
@@ -122,7 +158,7 @@ export async function updateMentor(input: UpdateMentorInput) {
 
  return { success: true }
  } catch (error) {
- console.error('Update mentor error:', error)
+ console.error('Update user error:', error)
  return {
  success: false,
  error:
@@ -133,65 +169,62 @@ export async function updateMentor(input: UpdateMentorInput) {
  }
 }
 
-export async function toggleMentorStatus(input: ToggleStatusInput) {
- try {
- const supabase = createAdminClient()
-
- const { error } = await supabase
- .from('mentors')
- .update({ is_active: input.isActive })
- .eq('id', input.mentorId)
-
- if (error) {
- return { success: false, error: error.message }
- }
-
- return { success: true }
- } catch (error) {
- console.error('Toggle status error:', error)
- return {
- success: false,
- error:
- error instanceof Error
- ? error.message
- : 'An unexpected error occurred',
- }
- }
+export type UpdateInviteInput = {
+ currentEmail: string
+ role: UserRole
+ fullName: string
+ email: string
+ isAuthorized: boolean
+ bio: string
+ background: string
+ hourlyRate: number | null
+ expertiseTags: string[]
+ isActive: boolean
+ permissions: string[]
 }
 
-export async function addAuthorizedStudent(email: string) {
+/**
+ * Edits a pending invite — someone on `authorized_users` who hasn't signed
+ * in with Google yet, so there's no `profiles` row for them. For students,
+ * turning `isAuthorized` off removes the invite outright (matches the
+ * "Authorized to sign in" toggle's existing meaning); there's no
+ * mentor/admin equivalent toggle, so those use `cancelInvite` instead.
+ */
+export async function updateInvite(input: UpdateInviteInput) {
  try {
  const supabase = createAdminClient()
+ const email = input.email.trim().toLowerCase()
+ const currentEmail = input.currentEmail.trim().toLowerCase()
 
+ if (input.role === 'student' && !input.isAuthorized) {
  const { error } = await supabase
- .from('authorized_students')
- .insert({ email })
-
- if (error) {
- return { success: false, error: error.message }
- }
-
- return { success: true }
- } catch (error) {
- console.error('Add authorized student error:', error)
- return {
- success: false,
- error:
- error instanceof Error
- ? error.message
- : 'An unexpected error occurred',
- }
- }
-}
-
-export async function removeAuthorizedStudent(email: string) {
- try {
- const supabase = createAdminClient()
-
- const { error } = await supabase
- .from('authorized_students')
+ .from('authorized_users')
  .delete()
- .eq('email', email)
+ .eq('email', currentEmail)
+ if (error) {
+ return { success: false, error: error.message }
+ }
+ return { success: true }
+ }
+
+ if (email !== currentEmail) {
+ await supabase.from('authorized_users').delete().eq('email', currentEmail)
+ }
+
+ const { error } = await supabase.from('authorized_users').upsert(
+ {
+ email,
+ role: input.role,
+ full_name: input.fullName.trim() || null,
+ bio: input.bio,
+ background: input.background,
+ hourly_rate: input.hourlyRate,
+ expertise_tags: input.expertiseTags,
+ is_active: input.isActive,
+ permissions: input.permissions,
+ },
+ { onConflict: 'email' }
+ )
 
  if (error) {
  return { success: false, error: error.message }
@@ -199,7 +232,7 @@ export async function removeAuthorizedStudent(email: string) {
 
  return { success: true }
  } catch (error) {
- console.error('Remove authorized student error:', error)
+ console.error('Update invite error:', error)
  return {
  success: false,
  error:
@@ -208,17 +241,149 @@ export async function removeAuthorizedStudent(email: string) {
  : 'An unexpected error occurred',
  }
  }
+}
+
+/** Cancels a not-yet-accepted invite — removes the `authorized_users` row. */
+export async function cancelInvite(email: string) {
+ try {
+ const supabase = createAdminClient()
+ const { error } = await supabase
+ .from('authorized_users')
+ .delete()
+ .eq('email', email.trim().toLowerCase())
+
+ if (error) {
+ return { success: false, error: error.message }
+ }
+
+ return { success: true }
+ } catch (error) {
+ console.error('Cancel invite error:', error)
+ return {
+ success: false,
+ error:
+ error instanceof Error
+ ? error.message
+ : 'An unexpected error occurred',
+ }
+ }
+}
+
+export type BulkImportMentorInput = {
+ fullName: string
+ email: string
+ bio?: string
+ background?: string
+ expertise?: string[]
+ hourlyRate?: number
+}
+
+export type BulkImportResult = {
+ success: boolean
+ totalProcessed: number
+ successCount: number
+ failureCount: number
+ errors: { row: number; email: string; error: string }[]
+}
+
+/** Bulk-invites mentors from a CSV — same invite-only path as a single Add. */
+export async function bulkImportMentors(
+ mentors: BulkImportMentorInput[]
+): Promise<BulkImportResult> {
+ const supabase = createAdminClient()
+ const result: BulkImportResult = {
+ success: true,
+ totalProcessed: mentors.length,
+ successCount: 0,
+ failureCount: 0,
+ errors: [],
+ }
+
+ for (let i = 0; i < mentors.length; i++) {
+ const mentor = mentors[i]
+
+ try {
+ if (!mentor.email || !mentor.fullName) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email || 'N/A',
+ error: 'Missing required fields (email or full name)',
+ })
+ result.failureCount++
+ continue
+ }
+
+ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+ if (!emailRegex.test(mentor.email)) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email,
+ error: 'Invalid email format',
+ })
+ result.failureCount++
+ continue
+ }
+
+ const { data: existingUser } = await supabase
+ .from('profiles')
+ .select('id')
+ .eq('email', mentor.email.toLowerCase().trim())
+ .single()
+
+ if (existingUser) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email,
+ error: 'User with this email already exists',
+ })
+ result.failureCount++
+ continue
+ }
+
+ const mentorResult = await createInvite({
+ role: 'mentor',
+ fullName: mentor.fullName.trim(),
+ email: mentor.email.toLowerCase().trim(),
+ bio: mentor.bio || '',
+ background: mentor.background || '',
+ expertiseTags: mentor.expertise || [],
+ hourlyRate: mentor.hourlyRate || null,
+ isActive: true,
+ permissions: [],
+ })
+
+ if (mentorResult.success) {
+ result.successCount++
+ } else {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email,
+ error: mentorResult.error || 'Unknown error',
+ })
+ result.failureCount++
+ }
+ } catch (error) {
+ result.errors.push({
+ row: i + 1,
+ email: mentor.email || 'N/A',
+ error: error instanceof Error ? error.message : 'Unexpected error',
+ })
+ result.failureCount++
+ }
+ }
+
+ result.success = result.failureCount === 0
+
+ return result
 }
 
 export async function bulkAddAuthorizedStudents(emails: string[]) {
  try {
  const supabase = createAdminClient()
 
- // Validate and clean emails
  const cleanedEmails = emails
- .map(email => email.toLowerCase().trim())
- .filter(email => {
- // Basic email validation
+ .map((email) => email.toLowerCase().trim())
+ .filter((email) => {
  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  return email && emailRegex.test(email)
  })
@@ -230,21 +395,18 @@ export async function bulkAddAuthorizedStudents(emails: string[]) {
  }
  }
 
- // Remove duplicates
  const uniqueEmails = Array.from(new Set(cleanedEmails))
 
- // Check which emails already exist
  const { data: existingEmails } = await supabase
- .from('authorized_students')
+ .from('authorized_users')
  .select('email')
  .in('email', uniqueEmails)
 
  const existingSet = new Set(
- (existingEmails || []).map(record => record.email)
+ (existingEmails || []).map((record) => record.email)
  )
 
- // Filter out already existing emails
- const newEmails = uniqueEmails.filter(email => !existingSet.has(email))
+ const newEmails = uniqueEmails.filter((email) => !existingSet.has(email))
 
  if (newEmails.length === 0) {
  return {
@@ -255,10 +417,9 @@ export async function bulkAddAuthorizedStudents(emails: string[]) {
  }
  }
 
- // Insert new emails
  const { error } = await supabase
- .from('authorized_students')
- .insert(newEmails.map(email => ({ email })))
+ .from('authorized_users')
+ .insert(newEmails.map((email) => ({ email, role: 'student' })))
 
  if (error) {
  return { success: false, error: error.message }
@@ -328,119 +489,6 @@ export async function grantAdminRole(email: string) {
  error: error instanceof Error ? error.message : 'An unexpected error occurred',
  }
  }
-}
-
-export type BulkImportMentorInput = {
- fullName: string
- email: string
- bio?: string
- background?: string
- expertise?: string[]
- hourlyRate?: number
-}
-
-export type BulkImportResult = {
- success: boolean
- totalProcessed: number
- successCount: number
- failureCount: number
- errors: { row: number; email: string; error: string }[]
- passwords?: { email: string; password: string; fullName: string }[]
-}
-
-export async function bulkImportMentors(mentors: BulkImportMentorInput[]): Promise<BulkImportResult> {
- const supabase = createAdminClient()
- const result: BulkImportResult = {
- success: true,
- totalProcessed: mentors.length,
- successCount: 0,
- failureCount: 0,
- errors: [],
- passwords: [],
- }
-
- for (let i = 0; i < mentors.length; i++) {
- const mentor = mentors[i]
-
- try {
- // Validate required fields
- if (!mentor.email || !mentor.fullName) {
- result.errors.push({
- row: i + 1,
- email: mentor.email || 'N/A',
- error: 'Missing required fields (email or full name)',
- })
- result.failureCount++
- continue
- }
-
- // Basic email validation
- const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
- if (!emailRegex.test(mentor.email)) {
- result.errors.push({
- row: i + 1,
- email: mentor.email,
- error: 'Invalid email format',
- })
- result.failureCount++
- continue
- }
-
- // Check if user already exists
- const { data: existingUser } = await supabase
- .from('profiles')
- .select('id')
- .eq('email', mentor.email.toLowerCase().trim())
- .single()
-
- if (existingUser) {
- result.errors.push({
- row: i + 1,
- email: mentor.email,
- error: 'User with this email already exists',
- })
- result.failureCount++
- continue
- }
-
- // Create the mentor using the existing createMentor function
- const mentorResult = await createMentor({
- fullName: mentor.fullName.trim(),
- email: mentor.email.toLowerCase().trim(),
- bio: mentor.bio || '',
- background: mentor.background || '',
- expertise: mentor.expertise || [],
- hourlyRate: mentor.hourlyRate || null,
- })
-
- if (mentorResult.success && mentorResult.tempPassword) {
- result.successCount++
- result.passwords?.push({
- email: mentor.email.toLowerCase().trim(),
- password: mentorResult.tempPassword,
- fullName: mentor.fullName.trim(),
- })
- } else {
- result.errors.push({
- row: i + 1,
- email: mentor.email,
- error: mentorResult.error || 'Unknown error',
- })
- result.failureCount++
- }
- } catch (error) {
- result.errors.push({
- row: i + 1,
- email: mentor.email || 'N/A',
- error: error instanceof Error ? error.message : 'Unexpected error',
- })
- result.failureCount++
- }
- }
-
- result.success = result.failureCount === 0
-
- return result
 }
 
 export async function approveBooking(bookingId: string) {

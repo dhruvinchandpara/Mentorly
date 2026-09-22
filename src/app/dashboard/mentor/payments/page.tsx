@@ -34,13 +34,13 @@ export default function PaymentsPage() {
     setLoading(true)
     try {
       // Fetch mentor profile for hourly rate
-      const { data: mentorData } = await supabase
-        .from('mentors')
+      const { data: profileData } = await supabase
+        .from('profiles')
         .select('hourly_rate')
         .eq('id', profile.id)
         .single()
 
-      setMentorProfile(mentorData)
+      setMentorProfile(profileData)
 
       // Fetch completed bookings
       const { data: bookingData } = await supabase
