@@ -13,6 +13,7 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import { Input } from '@/components/ui/input'
 import { useBookings, type Booking } from '@/hooks/useBookings'
 import { SessionNotePanel } from '@/components/ui/session-note-panel'
+import { SessionDetailModal, type SessionDetail } from '@/components/ui/session-detail-modal'
 
 const ITEMS_PER_PAGE = 10
 
@@ -36,6 +37,7 @@ export default function MySessionsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('upcoming')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedSession, setSelectedSession] = useState<SessionDetail | null>(null)
 
   // Tick to refresh session states
   const [, setTick] = useState(0)
@@ -475,13 +477,33 @@ export default function MySessionsPage() {
                     const mentorName = session.mentors?.profiles?.full_name || 'Unknown Mentor'
                     const isCompleted = session.status === 'completed'
                     const isRejected = session.status === 'rejected'
-                    const note = session.session_notes?.[0] ?? null
-                    const sessionStart = new Date(session.start_time)
-                    const is24hExpired = Date.now() > sessionStart.getTime() + 24 * 60 * 60 * 1000
-                    const isLocked = note?.is_locked || is24hExpired
+
+                    const openDetail = () => {
+                      if (!isCompleted) return
+                      setSelectedSession({
+                        mentorName,
+                        startTime: session.start_time,
+                        endTime: session.end_time,
+                        durationMinutes: session.actual_duration_minutes ?? session.duration_minutes,
+                        status: 'completed',
+                        keyInsights: session.key_insights,
+                        studentActionables: session.student_actionables,
+                      })
+                    }
 
                     return (
-                      <div key={session.id} className="p-4 bg-white border border-border rounded-lg space-y-2">
+                      <div
+                        key={session.id}
+                        onClick={openDetail}
+                        role={isCompleted ? 'button' : undefined}
+                        tabIndex={isCompleted ? 0 : undefined}
+                        onKeyDown={(e) => {
+                          if (isCompleted && (e.key === 'Enter' || e.key === ' ')) openDetail()
+                        }}
+                        className={`p-4 bg-white border border-border rounded-lg space-y-2 ${
+                          isCompleted ? 'cursor-pointer hover:bg-secondary transition-colors focus-visible:outline-2 focus-visible:outline-[#E5E55A]' : ''
+                        }`}
+                      >
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
@@ -517,17 +539,8 @@ export default function MySessionsPage() {
                             {session.rejection_reason}
                           </div>
                         )}
-                        {/* Session Note Panel — only for completed sessions */}
                         {isCompleted && (
-                          <SessionNotePanel
-                            bookingId={session.id}
-                            isLocked={!!isLocked}
-                            canEdit={false}
-                            editorId={profile?.id}
-                            initialContent={note?.content ?? null}
-                            lastEditedByName={note?.editor_profile?.full_name ?? null}
-                            lastEditedAt={note?.last_edited_at ?? null}
-                          />
+                          <p className="text-xs text-muted-foreground">Click to view what happened and key actionables →</p>
                         )}
                       </div>
                     )
@@ -580,6 +593,14 @@ export default function MySessionsPage() {
           </CardContent>
         </Card>
       )}
+
+      <SessionDetailModal
+        open={selectedSession !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedSession(null)
+        }}
+        session={selectedSession}
+      />
     </div>
   )
 }

@@ -20,6 +20,9 @@ export interface Booking {
   status: 'pending' | 'scheduled' | 'completed' | 'cancelled' | 'rejected'
   rejection_reason?: string | null
   meet_link: string | null
+  actual_duration_minutes?: number | null
+  key_insights?: string | null
+  student_actionables?: string | null
   mentors: {
     profiles: { full_name: string }
     expertise?: string[]
@@ -64,6 +67,7 @@ export function useBookings(status?: 'pending' | 'scheduled' | 'completed' | 'ca
             status: s.status === 'requested' ? 'pending' : s.status,
             rejection_reason: s.rejection_reason,
             meet_link: s.meet_link,
+            actual_duration_minutes: s.actual_duration_minutes,
             pre_work_reason: s.pre_work_reason,
             student_actionables: s.student_actionables,
             key_insights: s.key_insights,

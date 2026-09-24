@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Clock, Video, Radio, ArrowRight, Calendar, Loader2, AlertCircle, XCircle
+  Clock, Video, Radio, ArrowRight, Calendar, Loader2, AlertCircle, XCircle, Check
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,15 +24,40 @@ function getCallState(startTime: string, endTime: string) {
   return 'upcoming'
 }
 
+const DISMISSED_REJECTIONS_KEY = 'mentorly_dismissed_rejected_sessions'
+
+function loadDismissedRejectionIds(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(DISMISSED_REJECTIONS_KEY)
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
 export default function StudentHome() {
   const { profile } = useAuth()
   const { data: bookings = [], isLoading: loading } = useBookings()
   const [, setTick] = useState(0)
+  const [dismissedRejectionIds, setDismissedRejectionIds] = useState<Set<string>>(loadDismissedRejectionIds)
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 30_000)
     return () => clearInterval(id)
   }, [])
+
+  const markRejectionAsRead = (bookingId: string) => {
+    setDismissedRejectionIds(prev => {
+      const next = new Set(prev)
+      next.add(bookingId)
+      try {
+        window.localStorage.setItem(DISMISSED_REJECTIONS_KEY, JSON.stringify(Array.from(next)))
+      } catch {
+        // ignore storage errors (private browsing, quota, etc.)
+      }
+      return next
+    })
+  }
 
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -44,7 +69,7 @@ export default function StudentHome() {
   const now = new Date()
 
   const pendingSessions = bookings.filter(b => b.status === 'pending')
-  const rejectedSessions = bookings.filter(b => b.status === 'rejected')
+  const rejectedSessions = bookings.filter(b => b.status === 'rejected' && !dismissedRejectionIds.has(b.id))
 
   const scheduledBookings = bookings
     .filter(b => b.status === 'scheduled')
@@ -86,96 +111,7 @@ export default function StudentHome() {
         </p>
       </div>
 
-      {/* 1. Pending Admin Approvals Banner */}
-      {pendingSessions.length > 0 && (
-        <Card className="border-warning/30 bg-warning-bg/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-warning animate-pulse" />
-              <CardTitle className="text-base font-semibold text-warning">
-                Session Requests Awaiting Admin Review ({pendingSessions.length})
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {displayedPending.map((booking) => (
-                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-warning/30 rounded-lg gap-2">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Requested session with {booking.mentors.profiles.full_name}
-                    </p>
-                    <p className="text-xs text-[var(--fg-faint)] mt-0.5">
-                      {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes} min)
-                    </p>
-                  </div>
-                  <StatusBadge variant="pending">
-                    Awaiting Approval
-                  </StatusBadge>
-                </div>
-              ))}
-            </div>
-
-            {pendingSessions.length > WIDGET_CAP && (
-              <Link
-                href="/dashboard/student/sessions?tab=pending"
-                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                View all {pendingSessions.length} requests
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 2. Rejected Requests Alert Banner */}
-      {rejectedSessions.length > 0 && (
-        <Card className="border-destructive/30 bg-[#F5E6DE]/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-destructive" />
-              <CardTitle className="text-base font-semibold text-destructive">
-                Rejected Meeting Requests ({rejectedSessions.length})
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {displayedRejected.map((booking) => (
-                <div key={booking.id} className="p-4 bg-white border border-destructive/30 rounded-lg space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-destructive">
-                      Meeting request with {booking.mentors.profiles.full_name} was rejected
-                    </p>
-                    <StatusBadge variant="rejected">Rejected</StatusBadge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(booking.start_time)} at {formatTime(booking.start_time)}
-                  </p>
-                  {booking.rejection_reason && (
-                    <p className="text-xs text-destructive font-medium bg-[#F5E6DE] p-2 rounded mt-1">
-                      Reason: {booking.rejection_reason}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {rejectedSessions.length > WIDGET_CAP && (
-              <Link
-                href="/dashboard/student/sessions?tab=history"
-                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                View all {rejectedSessions.length} rejected requests
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 3. Ongoing Sessions */}
+      {/* 1. Ongoing Sessions */}
       {ongoingSessions.length > 0 && (
         <Card className="border-destructive/30 bg-[#F5E6DE]/50">
           <CardHeader className="pb-4">
@@ -231,7 +167,7 @@ export default function StudentHome() {
         </Card>
       )}
 
-      {/* 4. Next Upcoming Sessions */}
+      {/* 2. Next Upcoming Sessions */}
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -314,6 +250,104 @@ export default function StudentHome() {
           )}
         </CardContent>
       </Card>
+
+      {/* 3. Pending Admin Approvals Banner */}
+      {pendingSessions.length > 0 && (
+        <Card className="border-warning/30 bg-warning-bg/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-warning animate-pulse" />
+              <CardTitle className="text-base font-semibold text-warning">
+                Session Requests Awaiting Admin Review ({pendingSessions.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {displayedPending.map((booking) => (
+                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-warning/30 rounded-lg gap-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Requested session with {booking.mentors.profiles.full_name}
+                    </p>
+                    <p className="text-xs text-[var(--fg-faint)] mt-0.5">
+                      {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)} ({booking.duration_minutes} min)
+                    </p>
+                  </div>
+                  <StatusBadge variant="pending">
+                    Awaiting Approval
+                  </StatusBadge>
+                </div>
+              ))}
+            </div>
+
+            {pendingSessions.length > WIDGET_CAP && (
+              <Link
+                href="/dashboard/student/sessions?tab=pending"
+                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all {pendingSessions.length} requests
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 4. Rejected Requests Alert Banner */}
+      {rejectedSessions.length > 0 && (
+        <Card className="border-destructive/30 bg-[#F5E6DE]/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-destructive" />
+              <CardTitle className="text-base font-semibold text-destructive">
+                Rejected Meeting Requests ({rejectedSessions.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {displayedRejected.map((booking) => (
+                <div key={booking.id} className="p-4 bg-white border border-destructive/30 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-destructive">
+                      Meeting request with {booking.mentors.profiles.full_name} was rejected
+                    </p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <StatusBadge variant="rejected">Rejected</StatusBadge>
+                      <button
+                        onClick={() => markRejectionAsRead(booking.id)}
+                        className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground bg-white border border-border rounded-full hover:bg-secondary hover:text-foreground transition-colors"
+                      >
+                        <Check className="w-3 h-3" />
+                        Mark as read
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(booking.start_time)} at {formatTime(booking.start_time)}
+                  </p>
+                  {booking.rejection_reason && (
+                    <p className="text-xs text-destructive font-medium bg-[#F5E6DE] p-2 rounded mt-1">
+                      Reason: {booking.rejection_reason}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {rejectedSessions.length > WIDGET_CAP && (
+              <Link
+                href="/dashboard/student/sessions?tab=history"
+                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all {rejectedSessions.length} rejected requests
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 5. Find Mentor CTA */}
       <Card className="bg-gradient-to-br from-accent to-secondary border-primary/30">
