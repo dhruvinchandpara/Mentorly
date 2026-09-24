@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { ClipboardCheck } from 'lucide-react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { PreSessionQueue } from './components/pre-session-queue';
 import { PostSessionQueue } from './components/post-session-queue';
 
 export default function ApprovalsPage() {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
   const [activeTab, setActiveTab] = useState<'pre' | 'post'>('pre');
+  const [preCount, setPreCount] = useState(0);
+  const [postCount, setPostCount] = useState(0);
 
   return (
     <div className="space-y-6">
@@ -26,41 +26,35 @@ export default function ApprovalsPage() {
         </div>
       </div>
 
-      {!isDesktop && (
-        <div className="inline-flex p-1 bg-[#FBF4D7] rounded-full">
-          <button
-            onClick={() => setActiveTab('pre')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === 'pre' ? 'bg-[#0F1919] text-[#FFFBF3]' : 'text-[#4A5454]'
-            }`}
-          >
-            Pre-session
-          </button>
-          <button
-            onClick={() => setActiveTab('post')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === 'post' ? 'bg-[#0F1919] text-[#FFFBF3]' : 'text-[#4A5454]'
-            }`}
-          >
-            Post-session
-          </button>
-        </div>
-      )}
+      <div className="flex items-center gap-3 border-b border-border">
+        <button
+          onClick={() => setActiveTab('pre')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'pre'
+              ? 'border-[#0F1919] text-[#0F1919]'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Pre-session ({preCount})
+        </button>
+        <button
+          onClick={() => setActiveTab('post')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'post'
+              ? 'border-[#0F1919] text-[#0F1919]'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Post-session ({postCount})
+        </button>
+      </div>
 
-      {isDesktop ? (
-        <div className="grid grid-cols-2 gap-6 items-start">
-          <div className="max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
-            <PreSessionQueue />
-          </div>
-          <div className="max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
-            <PostSessionQueue />
-          </div>
-        </div>
-      ) : activeTab === 'pre' ? (
-        <PreSessionQueue />
-      ) : (
-        <PostSessionQueue />
-      )}
+      <div className={activeTab === 'pre' ? '' : 'hidden'}>
+        <PreSessionQueue onCountChange={setPreCount} />
+      </div>
+      <div className={activeTab === 'post' ? '' : 'hidden'}>
+        <PostSessionQueue onCountChange={setPostCount} />
+      </div>
     </div>
   );
 }

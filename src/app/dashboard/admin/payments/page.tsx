@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { IndianRupee, Loader2, CalendarCheck, Clock, AlertCircle } from 'lucide-react';
+import { IndianRupee, Loader2, CalendarCheck, Clock, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExpandableRow } from '@/components/ui/expandable-row';
 import { formatCurrency } from '@/lib/format-currency';
@@ -64,6 +64,47 @@ function formatDate(d: string): string {
   });
 }
 
+const MENTORS_PER_PAGE = 10;
+const SESSIONS_PER_REVEAL = 5;
+
+function MentorSessionsList({ sessions, hourlyRate }: { sessions: SessionRow[]; hourlyRate: number | null }) {
+  const [visibleCount, setVisibleCount] = useState(SESSIONS_PER_REVEAL);
+  const visibleSessions = sessions.slice(0, visibleCount);
+
+  return (
+    <div className="space-y-2">
+      {visibleSessions.map((s) => (
+        <div
+          key={s.id}
+          className="flex items-center justify-between gap-3 text-sm px-2 py-2 rounded-[10px] bg-background"
+        >
+          <div>
+            <p className="font-medium text-foreground">{s.studentName}</p>
+            <p className="text-xs text-[var(--fg-faint)] mt-0.5">{formatDate(s.updatedAt)}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-muted-foreground">{s.actualDurationMinutes} min</p>
+            <p className="text-xs text-[var(--fg-faint)] mt-0.5">
+              {hourlyRate != null
+                ? formatCurrency((s.actualDurationMinutes / 60) * hourlyRate)
+                : 'Rate not set'}
+            </p>
+          </div>
+        </div>
+      ))}
+
+      {sessions.length > visibleCount && (
+        <button
+          onClick={() => setVisibleCount((c) => c + SESSIONS_PER_REVEAL)}
+          className="w-full py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Show more ({sessions.length - visibleCount} remaining)
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPayments() {
   const { supabase, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -71,6 +112,7 @@ export default function AdminPayments() {
   const [range, setRange] = useState<RangeKey>('this_month');
   const [customStart, setCustomStart] = useState(toDateInputValue(startOfMonth(0)));
   const [customEnd, setCustomEnd] = useState(toDateInputValue(new Date()));
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!authLoading) fetchSessions();
@@ -182,6 +224,18 @@ export default function AdminPayments() {
       })
       .sort((a, b) => a.mentorName.localeCompare(b.mentorName));
   }, [filteredSessions]);
+
+  // Reset to page 1 whenever the underlying mentor list changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [range, customStart, customEnd]);
+
+  const totalPages = Math.max(1, Math.ceil(mentorGroups.length / MENTORS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedGroups = mentorGroups.slice(
+    (safePage - 1) * MENTORS_PER_PAGE,
+    safePage * MENTORS_PER_PAGE
+  );
 
   const summary = useMemo(() => {
     const totalSessions = filteredSessions.length;
@@ -322,7 +376,7 @@ export default function AdminPayments() {
                 <span>Rate</span>
                 <span>Amount</span>
               </div>
-              {mentorGroups.map((group) => {
+              {paginatedGroups.map((group) => {
                 const rateUnset = group.hourlyRate == null;
                 return (
                   <ExpandableRow
@@ -350,30 +404,53 @@ export default function AdminPayments() {
                       </div>
                     }
                   >
-                    <div className="space-y-2">
-                      {group.sessions.map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex items-center justify-between gap-3 text-sm px-2 py-2 rounded-[10px] bg-background"
-                        >
-                          <div>
-                            <p className="font-medium text-foreground">{s.studentName}</p>
-                            <p className="text-xs text-[var(--fg-faint)] mt-0.5">{formatDate(s.updatedAt)}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-muted-foreground">{s.actualDurationMinutes} min</p>
-                            <p className="text-xs text-[var(--fg-faint)] mt-0.5">
-                              {group.hourlyRate != null
-                                ? formatCurrency((s.actualDurationMinutes / 60) * group.hourlyRate)
-                                : 'Rate not set'}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <MentorSessionsList sessions={group.sessions} hourlyRate={group.hourlyRate} />
                   </ExpandableRow>
                 );
               })}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-2 pt-4 mt-2 border-t border-border/80">
+              <p className="text-sm text-muted-foreground">
+                Showing {(safePage - 1) * MENTORS_PER_PAGE + 1} to{' '}
+                {Math.min(safePage * MENTORS_PER_PAGE, mentorGroups.length)} of{' '}
+                {mentorGroups.length} mentors
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 text-sm font-medium rounded-[14px] transition-colors ${
+                        safePage === page
+                          ? 'bg-[#0F1919] text-[#FFFBF3]'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </CardContent>

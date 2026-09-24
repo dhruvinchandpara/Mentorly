@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { approvePostSession, sendSessionForRevision } from '@/app/dashboard/admin/actions';
-import { BookOpen, Check, RotateCcw, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { BookOpen, Check, RotateCcw, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { ExpandableRow } from '@/components/ui/expandable-row';
 import { RevisionReasonModal } from '@/components/ui/revision-reason-modal';
 import {
@@ -19,10 +19,13 @@ const formatDate = (d: string) =>
     year: 'numeric',
   });
 
-export function PostSessionQueue() {
+const BATCH_SIZE = 10;
+
+export function PostSessionQueue({ onCountChange }: { onCountChange?: (count: number) => void }) {
   const { supabase, profile } = useAuth();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
@@ -40,6 +43,7 @@ export function PostSessionQueue() {
     const data = await fetchSessionsByStatus(supabase, ['awaiting_post_review']);
     setSessions(data);
     setLoading(false);
+    onCountChange?.(data.length);
   };
 
   const handleApprovePostSession = async (sessionId: string) => {
@@ -103,8 +107,6 @@ export function PostSessionQueue() {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold text-foreground">Post-session · {sessions.length}</h2>
-
       {feedback && (
         <div
           className={`p-3 rounded-xl flex items-center gap-2 text-sm ${
@@ -130,7 +132,7 @@ export function PostSessionQueue() {
           <p className="text-sm text-muted-foreground">No session reports waiting on review.</p>
         </div>
       ) : (
-        sessions.map((session) => {
+        sessions.slice(0, visibleCount).map((session) => {
           const isLoading = actionLoading[session.id] || false;
           return (
             <ExpandableRow
@@ -202,6 +204,16 @@ export function PostSessionQueue() {
             </ExpandableRow>
           );
         })
+      )}
+
+      {sessions.length > visibleCount && (
+        <button
+          onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
+          className="w-full py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5"
+        >
+          Load more ({sessions.length - visibleCount} remaining)
+          <ChevronDown className="w-3.5 h-3.5" />
+        </button>
       )}
 
       <RevisionReasonModal

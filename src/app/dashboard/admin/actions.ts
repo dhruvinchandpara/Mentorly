@@ -6,8 +6,6 @@ import { isGoogleConnected } from '@/lib/google-oauth'
 import { validateRejectionReason, validateRevisionReason } from '@/lib/booking-validation'
 import type { UserRole } from './user-constants'
 
-export type { UserRole }
-
 export type InviteInput = {
  role: UserRole
  fullName: string

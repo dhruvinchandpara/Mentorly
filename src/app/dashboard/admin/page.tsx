@@ -50,7 +50,6 @@ export default function AdminHome() {
   const [ongoingSessions, setOngoingSessions] = useState<SessionInfo[]>([])
   const [upcomingSessions, setUpcomingSessions] = useState<SessionInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAllUpcoming, setShowAllUpcoming] = useState(false)
 
   useEffect(() => {
     if (!authLoading) {
@@ -188,7 +187,7 @@ export default function AdminHome() {
     { label: 'Authorized Students', value: metrics.authorizedStudents, icon: Mail, color: 'slate', change: null },
   ]
 
-  const displayedUpcoming = showAllUpcoming ? upcomingSessions : upcomingSessions.slice(0, 5)
+  const displayedUpcoming = upcomingSessions.slice(0, 5)
 
   return (
     <div className="space-y-8">
@@ -314,12 +313,13 @@ export default function AdminHome() {
               </div>
 
               {upcomingSessions.length > 5 && (
-                <button
-                  onClick={() => setShowAllUpcoming(!showAllUpcoming)}
-                  className="w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                <Link
+                  href="/dashboard/admin/sessions"
+                  className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showAllUpcoming ? 'Show Less' : `Show All (${upcomingSessions.length})`}
-                </button>
+                  View all {upcomingSessions.length} sessions
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               )}
             </>
           )}

@@ -44,7 +44,8 @@ export default function MentorDashboard() {
   )
   const upcomingBookings = bookings.filter(b =>
     b.status === 'scheduled' && getSessionState(b.start_time, b.end_time) === 'upcoming'
-  ).slice(0, 5)
+  )
+  const displayedUpcoming = upcomingBookings.slice(0, 5)
   const sessionsNeedingReportBookings = bookings.filter(b =>
     (b.status === 'scheduled' && getSessionState(b.start_time, b.end_time) === 'past') || b.status === 'revise'
   )
@@ -215,26 +216,38 @@ export default function MentorDashboard() {
                 <p className="text-sm text-muted-foreground">No upcoming sessions.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {upcomingBookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center justify-between p-4 bg-muted border border-border rounded-lg hover:bg-accent transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-card border-2 border-border text-muted-foreground flex items-center justify-center">
-                        <Users className="w-5 h-5" />
+              <>
+                <div className="space-y-3">
+                  {displayedUpcoming.map((booking) => (
+                    <div key={booking.id} className="flex items-center justify-between p-4 bg-muted border border-border rounded-lg hover:bg-accent transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-card border-2 border-border text-muted-foreground flex items-center justify-center">
+                          <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{booking.profiles.full_name}</p>
+                          <p className="text-xs text-[var(--fg-faint)] mt-0.5">
+                            {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)} · {booking.duration_minutes} min
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{booking.profiles.full_name}</p>
-                        <p className="text-xs text-[var(--fg-faint)] mt-0.5">
-                          {formatDate(booking.start_time)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)} · {booking.duration_minutes} min
-                        </p>
-                      </div>
+                      <StatusBadge variant="upcoming" size="sm">
+                        Scheduled
+                      </StatusBadge>
                     </div>
-                    <StatusBadge variant="upcoming" size="sm">
-                      Scheduled
-                    </StatusBadge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {upcomingBookings.length > 5 && (
+                  <Link
+                    href="/dashboard/mentor/sessions"
+                    className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    View all {upcomingBookings.length} sessions
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

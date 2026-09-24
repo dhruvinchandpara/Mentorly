@@ -58,7 +58,13 @@ export default function StudentHome() {
   const upcomingSessions = scheduledBookings.filter(b => {
     const state = getCallState(b.start_time, b.end_time)
     return state !== 'live' && new Date(b.start_time) > now
-  }).slice(0, 3)
+  })
+
+  const WIDGET_CAP = 5
+  const displayedPending = pendingSessions.slice(0, WIDGET_CAP)
+  const displayedRejected = rejectedSessions.slice(0, WIDGET_CAP)
+  const displayedOngoing = ongoingSessions.slice(0, WIDGET_CAP)
+  const displayedUpcoming = upcomingSessions.slice(0, WIDGET_CAP)
 
   if (loading) {
     return (
@@ -93,7 +99,7 @@ export default function StudentHome() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {pendingSessions.map((booking) => (
+              {displayedPending.map((booking) => (
                 <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-warning/30 rounded-lg gap-2">
                   <div>
                     <p className="text-sm font-medium text-foreground">
@@ -109,6 +115,16 @@ export default function StudentHome() {
                 </div>
               ))}
             </div>
+
+            {pendingSessions.length > WIDGET_CAP && (
+              <Link
+                href="/dashboard/student/sessions?tab=pending"
+                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all {pendingSessions.length} requests
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </CardContent>
         </Card>
       )}
@@ -126,7 +142,7 @@ export default function StudentHome() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {rejectedSessions.map((booking) => (
+              {displayedRejected.map((booking) => (
                 <div key={booking.id} className="p-4 bg-white border border-destructive/30 rounded-lg space-y-1">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-destructive">
@@ -145,6 +161,16 @@ export default function StudentHome() {
                 </div>
               ))}
             </div>
+
+            {rejectedSessions.length > WIDGET_CAP && (
+              <Link
+                href="/dashboard/student/sessions?tab=history"
+                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all {rejectedSessions.length} rejected requests
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </CardContent>
         </Card>
       )}
@@ -163,7 +189,7 @@ export default function StudentHome() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {ongoingSessions.map((booking) => (
+              {displayedOngoing.map((booking) => (
                 <div key={booking.id} className="flex items-center justify-between p-4 bg-white border border-destructive/30 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#F5E6DE] text-destructive flex items-center justify-center">
@@ -191,6 +217,16 @@ export default function StudentHome() {
                 </div>
               ))}
             </div>
+
+            {ongoingSessions.length > WIDGET_CAP && (
+              <Link
+                href="/dashboard/student/sessions"
+                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all {ongoingSessions.length} ongoing sessions
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </CardContent>
         </Card>
       )}
@@ -216,8 +252,9 @@ export default function StudentHome() {
               <p className="text-sm text-muted-foreground">No upcoming approved sessions scheduled.</p>
             </div>
           ) : (
+            <>
             <div className="space-y-3">
-              {upcomingSessions.map((booking) => {
+              {displayedUpcoming.map((booking) => {
                 const state = getCallState(booking.start_time, booking.end_time)
                 const isReady = state === 'ready'
 
@@ -263,6 +300,17 @@ export default function StudentHome() {
                 )
               })}
             </div>
+
+            {upcomingSessions.length > WIDGET_CAP && (
+              <Link
+                href="/dashboard/student/sessions?tab=upcoming"
+                className="flex items-center justify-center gap-1.5 w-full mt-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all {upcomingSessions.length} sessions
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+            </>
           )}
         </CardContent>
       </Card>

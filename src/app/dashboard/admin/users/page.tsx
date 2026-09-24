@@ -19,6 +19,8 @@ import {
   Users as UsersIcon,
   Upload,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -35,6 +37,8 @@ export type { UserRow, ProfileRow } from './types'
 type RoleFilter = 'all' | UserRole
 
 type ModalMode = 'add' | 'edit' | null
+
+const ITEMS_PER_PAGE = 10
 
 const PERMISSION_LABELS: Record<string, string> = Object.fromEntries(
   PERMISSION_OPTIONS.map((o) => [o.value, o.label])
@@ -86,6 +90,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true)
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [modalMode, setModalMode] = useState<ModalMode>(null)
   const [editingUser, setEditingUser] = useState<UserRow | null>(null)
   const [showBulkMentors, setShowBulkMentors] = useState(false)
@@ -177,6 +182,18 @@ export default function UsersPage() {
       return matchesRole && matchesSearch
     })
   }, [users, roleFilter, searchQuery])
+
+  // Reset to page 1 when the filtered set changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [roleFilter, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedUsers = filteredUsers.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE
+  )
 
   const openAddModal = () => {
     setEditingUser(null)
@@ -385,7 +402,7 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredUsers.map((u) => (
+                {paginatedUsers.map((u) => (
                   <tr key={u.id ?? `invite:${u.email}`} className="hover:bg-secondary transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -420,6 +437,49 @@ export default function UsersPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-6 border-t border-border/80">
+            <p className="text-sm text-muted-foreground">
+              Showing {(safePage - 1) * ITEMS_PER_PAGE + 1} to{' '}
+              {Math.min(safePage * ITEMS_PER_PAGE, filteredUsers.length)} of{' '}
+              {filteredUsers.length} users
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 text-sm font-medium rounded-[14px] transition-colors ${
+                      safePage === page
+                        ? 'bg-[#0F1919] text-[#FFFBF3]'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-border/60 rounded-[14px] hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>

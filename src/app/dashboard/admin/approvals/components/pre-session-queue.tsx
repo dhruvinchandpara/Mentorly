@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { approveBooking, rejectBooking } from '@/app/dashboard/admin/actions';
-import { Clock, Check, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Clock, Check, X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ExpandableRow } from '@/components/ui/expandable-row';
 import { RejectReasonModal } from '@/components/ui/reject-reason-modal';
@@ -25,11 +25,14 @@ const formatDate = (d: string) =>
 const formatTime = (d: string) =>
   new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-export function PreSessionQueue() {
+const BATCH_SIZE = 10;
+
+export function PreSessionQueue({ onCountChange }: { onCountChange?: (count: number) => void }) {
   const { supabase } = useAuth();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [reportHistory, setReportHistory] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
@@ -45,12 +48,13 @@ export function PreSessionQueue() {
   const load = async () => {
     setLoading(true);
     const [pending, history] = await Promise.all([
-      fetchSessionsByStatus(supabase, ['pending', 'requested']),
+      fetchSessionsByStatus(supabase, ['requested']),
       fetchSessionsWithPostSessionReport(supabase),
     ]);
     setSessions(pending);
     setReportHistory(history);
     setLoading(false);
+    onCountChange?.(pending.length);
   };
 
   const handleApprove = async (sessionId: string) => {
@@ -114,8 +118,6 @@ export function PreSessionQueue() {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold text-foreground">Pre-session · {sessions.length}</h2>
-
       {feedback && (
         <div
           className={`p-3 rounded-xl flex items-center gap-2 text-sm ${
@@ -141,7 +143,7 @@ export function PreSessionQueue() {
           <p className="text-sm text-muted-foreground">No sessions waiting on pre-session approval.</p>
         </div>
       ) : (
-        sessions.map((session) => {
+        sessions.slice(0, visibleCount).map((session) => {
           const isLoading = actionLoading[session.id] || false;
           const priorSession = pickPriorSession(
             reportHistory,
@@ -236,6 +238,16 @@ export function PreSessionQueue() {
             </ExpandableRow>
           );
         })
+      )}
+
+      {sessions.length > visibleCount && (
+        <button
+          onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
+          className="w-full py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5"
+        >
+          Load more ({sessions.length - visibleCount} remaining)
+          <ChevronDown className="w-3.5 h-3.5" />
+        </button>
       )}
 
       <RejectReasonModal

@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   CheckCircle2, Clock, Calendar, Video, Radio,
   Loader2, Search, BookOpen, AlertCircle, ExternalLink, ChevronLeft, ChevronRight, XCircle
@@ -31,6 +32,7 @@ type TabType = 'upcoming' | 'pending' | 'history'
 export default function MySessionsPage() {
   const { profile } = useAuth()
   const { data: bookings = [], isLoading: loading } = useBookings()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabType>('upcoming')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -42,6 +44,14 @@ export default function MySessionsPage() {
     const id = setInterval(() => setTick(t => t + 1), 30_000)
     return () => clearInterval(id)
   }, [])
+
+  // Initialize activeTab from search params
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'upcoming' || tabParam === 'pending' || tabParam === 'history') {
+      setActiveTab(tabParam as TabType)
+    }
+  }, [searchParams])
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })

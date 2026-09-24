@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { MobileBottomNav } from '@/components/ui/mobile-bottom-nav'
 
 const navItems = [
   {
@@ -95,7 +96,7 @@ export default function MentorLayout({
       {/* Sidebar - Clean white design matching admin */}
       <aside
         className={`${collapsed ? 'w-20' : 'w-64'
-          } transition-all duration-300 ease-in-out bg-card border-r border-border flex flex-col fixed h-full z-20`}
+          } hidden md:flex transition-all duration-300 ease-in-out bg-card border-r border-border flex-col fixed h-full z-20`}
       >
         {/* Brand */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-border">
@@ -176,7 +177,7 @@ export default function MentorLayout({
 
       {/* Main content */}
       <main
-        className={`flex-1 transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-64'
+        className={`flex-1 transition-all duration-300 ${collapsed ? 'md:ml-20' : 'md:ml-64'
           }`}
       >
         {/* Top bar */}
@@ -234,8 +235,10 @@ export default function MentorLayout({
         </header>
 
         {/* Page content */}
-        <div className="p-6 lg:p-8">{children}</div>
+        <div className="p-6 lg:p-8 pb-28 md:pb-8">{children}</div>
       </main>
+
+      <MobileBottomNav items={navItems} rootHref="/dashboard/mentor" variant="mentor" />
     </div>
   )
 }
